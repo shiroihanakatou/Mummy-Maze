@@ -20,8 +20,8 @@ class Undobutton:
         text_rect = text.get_rect(center=self.rect.center)  
         surface.blit(text, text_rect)
     def undo_move(self, event,player,enemy,gamestate):
-        if self.rect.collidepoint(event.pos) and gamestate.storedmove:
-            last_move=gamestate.storedmove.pop()
+        if self.rect.collidepoint(event.pos) and gamestate.storedmove:#Nếu click và nút và có thể undo
+            last_move=gamestate.storedmove.pop()#Lấy lại trong stack
             player.row,player.col,enemy.row,enemy.col = last_move
 class Restartbutton:
     def __init__(self):
@@ -41,8 +41,8 @@ class Restartbutton:
         surface.blit(text, text_rect)
     def restart_game(self, event,gamestate,player,enemy):
         if self.rect.collidepoint(event.pos):
-            player.row,player.col,enemy.row,enemy.col = gamestate.initpos
-            gamestate.storedmove.clear()
+            player.row,player.col,enemy.row,enemy.col = gamestate.initpos #Gán vị trí ban đầu
+            gamestate.storedmove.clear() #Xóa stack
             gamestate.storedmove.append((player.row,player.col,enemy.row,enemy.col))
 
 class Newgamebutton:
@@ -63,8 +63,8 @@ class Newgamebutton:
         surface.blit(text, text_rect)
     def newgame_game(self, event,grid,player,enemy,gamestate):
         if self.rect.collidepoint(event.pos):
-            gamestate.storedmove.clear() 
-            generate_game(grid,player,enemy,gamestate)
+            gamestate.storedmove.clear() #Xóa stack
+            generate_game(grid,player,enemy,gamestate) #Tạo game mới
             gamestate.gameover = False
         
 class Exitbutton:
@@ -85,5 +85,5 @@ class Exitbutton:
         surface.blit(text, text_rect)
     def exit_game(self, event):
         if self.rect.collidepoint(event.pos):
-            pygame.quit()
+            pygame.quit() #Thoát tab
             sys.exit()

@@ -36,7 +36,7 @@ def new_enemy_position(e_row,e_col,p_row,p_col,grid):
     return e_row,e_col
 
 
-def winning_check(player):
+def winning_check(player):#Kiểm nếu người chơi đến góc
     if player.row == ROWS-1 and player.col == COLS-1:
         text = font.render("You Win", True, GREEN)
         DISPLAYSURF.blit(
@@ -52,7 +52,7 @@ def winning_check(player):
         # sys.exit()
         
         
-def losing_check(player,enemy,gameover):
+def losing_check(player,enemy,gameover):#Kiểm nếu quái trúng người chơi
         if player.row == enemy.row and player.col == enemy.col:
             gameover = True
             text = font.render("Game Over", True, RED)
@@ -70,7 +70,7 @@ def losing_check(player,enemy,gameover):
             # sys.exit()
             
             
-def is_playable(player, enemy, grid,gamestate):
+def is_playable(player, enemy, grid,gamestate):#Xài BFS kiểm nếu có đường đi
     directions = [('up', -1, 0), ('down', 1, 0), ('left', 0, -1), ('right', 0, 1)]
     
     queue = [(player.row, player.col, enemy.row, enemy.col)]
@@ -114,7 +114,7 @@ def is_playable(player, enemy, grid,gamestate):
 def generate_game(grid,player,enemy,gamestate):
     print("Generating new game...")
 
-    while True:
+    while True:#Generate tường đến khi có đường đi
         for row in grid:
             for cell in row:
                 cell.up , cell.down ,cell.left,cell.right = 0,0,0,0
@@ -129,13 +129,13 @@ def generate_game(grid,player,enemy,gamestate):
         generate_walls(grid, random.randint(ROWS*COLS//4,ROWS*COLS))
         if is_playable(player, enemy, grid,gamestate):
             break
-    gamestate.initpos=(player.row,player.col,enemy.row,enemy.col)
+    gamestate.initpos=(player.row,player.col,enemy.row,enemy.col) #Lưu vị trí ban đầu
     gamestate.storedmove.append((player.row,player.col,enemy.row,enemy.col))
     gamestate.gameover = False
     print("New game generated.")
     print(gamestate.solution)
     
-def generate_walls(grid, num_walls):
+def generate_walls(grid, num_walls):#Random generate tường
     directions = [('up', 'down', -1, 0), ('down', 'up', 1, 0), 
             ('left', 'right', 0, -1), ('right', 'left', 0, 1)]
     for _ in range(num_walls):
@@ -144,7 +144,7 @@ def generate_walls(grid, num_walls):
             r = random.randint(1, ROWS - 1)
             c = random.randint(1, COLS - 1)
             d = random.choice(directions)
-            if 0 <= r + d[2] < ROWS and 0 <= c + d[3] < COLS and not getattr(grid[r][c],d[0]):
+            if 0 <= r + d[2] < ROWS and 0 <= c + d[3] < COLS and not getattr(grid[r][c],d[0]):#Tường trong lưới và chưa có
                 setattr(grid[r][c],d[0], 1)  
                 setattr(grid[r + d[2]][c + d[3]],d[1], 1)  
                 no_wall = False

@@ -5,6 +5,7 @@ from module import new_enemy_position
 
 class Cell:
     def __init__(self, row, col):
+        # Một ô sẽ có các thuộc tính: vị trí và các bước tường
         self.row = row
         self.col = col
         self.up = 0
@@ -16,6 +17,7 @@ class Cell:
         x = self.col * CELL_SIZE
         y = self.row * CELL_SIZE
         
+        # Vẽ các trước ô rect màu xám,nếu có tường thì line trắng
         pygame.draw.rect(surface, GRAY, (x, y, CELL_SIZE, CELL_SIZE), 1)
 
         if self.up:
@@ -36,6 +38,7 @@ class Player:
     def move(self, key, grid):
         cell = grid[self.row][self.col]
 
+        #Di chuyển người chơi (có check tường)
         if key == K_UP and not cell.up and self.row > 0:
             self.row -= 1
         elif key == K_DOWN and not cell.down and self.row < ROWS - 1:
@@ -58,6 +61,7 @@ class Enemy:
         self.color = RED
 
     def move(self, player, grid):
+        #Quái sẽ move theo hàm new_enemy_position
         self.row,self.col = new_enemy_position(self.row,self.col,player.row,player.col,grid)
 
     def draw(self, surface):

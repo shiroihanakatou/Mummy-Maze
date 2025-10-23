@@ -26,20 +26,19 @@ while True:
             pygame.quit()
             sys.exit()
 
-        if e.type == KEYDOWN and not gamestate.gameover:
-            player.move(e.key, grid)
-            enemy.move(player, grid)
-            gamestate.storedmove.append((player.row,player.col,enemy.row,enemy.col))
+        if e.type == KEYDOWN and not gamestate.gameover:#Khi người dùng gõ phím
+            player.move(e.key, grid) 
+            enemy.move(player, grid) 
+            gamestate.storedmove.append((player.row,player.col,enemy.row,enemy.col)) #Lưu lại vị trí 
             
-        if e.type == MOUSEBUTTONDOWN :
+        if e.type == MOUSEBUTTONDOWN :#Khi người dùng click chuột
             undobutton.undo_move(e,player,enemy,gamestate)
             restartbutton.restart_game(e,gamestate,player,enemy)
             newgamebutton.newgame_game(e,grid,player,enemy,gamestate)
             exitbutton.exit_game(e)
             
-
+    # Vẽ màn hình và lưới
     DISPLAYSURF.fill(BLACK)
-
     for row in grid:
         for cell in row:
             cell.draw(DISPLAYSURF)
@@ -51,6 +50,7 @@ while True:
     newgamebutton.draw(DISPLAYSURF)
     exitbutton.draw(DISPLAYSURF)
     
+    #Kiểm tra thắng thua
     losing_check(player,enemy,gamestate)
     winning_check(player)
 
