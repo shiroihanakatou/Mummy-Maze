@@ -22,7 +22,11 @@ class Undobutton:
     def undo_move(self, event,player,enemy,gamestate):
         if self.rect.collidepoint(event.pos) and gamestate.storedmove:#Nếu click và nút và có thể undo
             last_move=gamestate.storedmove.pop()#Lấy lại trong stack
+            #print(gamestate.storedmove)
+            if not gamestate.storedmove:#Nếu stack rỗng sau khi pop
+                gamestate.storedmove.append(last_move) #Gán lại vị trí vừa lấy
             player.row,player.col,enemy.row,enemy.col = last_move
+            gamestate.gameover=False #Bỏ thắng thua nếu có
 class Restartbutton:
     def __init__(self):
         self.color = YELLOW

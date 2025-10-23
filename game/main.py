@@ -7,7 +7,6 @@ from button import Undobutton, Restartbutton, Newgamebutton, Exitbutton
 from gamestate import Gamestate
 
 pygame.init()
-storedmove=[]
 grid = [[Cell(r, c) for c in range(COLS)] for r in range(ROWS)]
 player = Player()
 enemy = Enemy()
