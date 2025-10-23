@@ -8,7 +8,6 @@ from gamestate import Gamestate
 
 pygame.init()
 storedmove=[]
-gameover = False
 grid = [[Cell(r, c) for c in range(COLS)] for r in range(ROWS)]
 player = Player()
 enemy = Enemy()

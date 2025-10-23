@@ -36,8 +36,8 @@ def new_enemy_position(e_row,e_col,p_row,p_col,grid):
     return e_row,e_col
 
 
-def winning_check(player,gameover):#Kiểm nếu người chơi đến góc
-    if not gameover and player.row == ROWS-1 and player.col == COLS-1:
+def winning_check(player,gamestate):#Kiểm nếu người chơi đến góc
+    if not gamestate.gameover and player.row == ROWS-1 and player.col == COLS-1:
         text = font.render("You Win", True, GREEN)
         DISPLAYSURF.blit(
             text,
@@ -52,9 +52,9 @@ def winning_check(player,gameover):#Kiểm nếu người chơi đến góc
         # sys.exit()
         
         
-def losing_check(player,enemy,gameover):#Kiểm nếu quái trúng người chơi
+def losing_check(player,enemy,gamestate):#Kiểm nếu quái trúng người chơi
         if player.row == enemy.row and player.col == enemy.col:
-            gameover = True
+            gamestate.gameover = True
             text = font.render("Game Over", True, RED)
             DISPLAYSURF.blit(
                 text,
@@ -64,7 +64,6 @@ def losing_check(player,enemy,gameover):#Kiểm nếu quái trúng người
                 ),
             )
             pygame.display.update()
-            return gameover
             # wait(2)
             # pygame.quit()
             # sys.exit()
