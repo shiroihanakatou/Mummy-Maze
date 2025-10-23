@@ -52,7 +52,7 @@ while True:
     
     #Kiểm tra thắng thua
     losing_check(player,enemy,gamestate)
-    winning_check(player)
+    winning_check(player,gamestate)
 
     
     pygame.display.update()

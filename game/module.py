@@ -31,13 +31,13 @@ def new_enemy_position(e_row,e_col,p_row,p_col,grid):
                     e_col = new_col
                     break
 
-            if e_row == p_row and e_col == p_col:
-                break
+        if e_row == p_row and e_col == p_col:
+            break
     return e_row,e_col
 
 
-def winning_check(player):#Kiểm nếu người chơi đến góc
-    if player.row == ROWS-1 and player.col == COLS-1:
+def winning_check(player,gameover):#Kiểm nếu người chơi đến góc
+    if not gameover and player.row == ROWS-1 and player.col == COLS-1:
         text = font.render("You Win", True, GREEN)
         DISPLAYSURF.blit(
             text,
@@ -96,7 +96,6 @@ def is_playable(player, enemy, grid,gamestate):#Xài BFS kiểm nếu có đ
                     if new_p_row == ROWS - 1 and new_p_col == COLS - 1:
                         print("Path found!")
                         path=[]
-                        directions = [('up', -1, 0), ('down', 1, 0), ('left', 0, -1), ('right', 0, 1)]
                         curr_p_row, curr_p_col, curr_e_row, curr_e_col = new_p_row, new_p_col, new_e_row, new_e_col
                         while (new_p_row, new_p_col, new_e_row, new_e_col) != (player.row, player.col, enemy.row, enemy.col):
                             new_p_row, new_p_col, new_e_row, new_e_col = prev[curr_p_row][curr_p_col][curr_e_row][curr_e_col]
