@@ -108,6 +108,28 @@ def is_playable(player, enemy, grid,gamestate):#Xài BFS kiểm nếu có đ
                         return True
     return False
 
+def is_not_too_easy(player, enemy, grid):
+    directions = [('up', -1, 0), ('down', 1, 0), ('left', 0, -1), ('right', 0, 1)]
+    visited = [[False] * COLS for _ in range(ROWS)]
+
+    visited[player.row][player.col] = True
+    queue = [(player.row, player.col)]
+    while queue:
+        curr = queue.pop()
+        p_row, p_col = curr
+        cell = grid[p_row][p_col]
+
+        for d in directions:
+            if not getattr(cell, d[0]) and 0 <= p_row + d[1] < ROWS and 0 <= p_col + d[2] < COLS:
+                new_p_row = p_row + d[1]
+                new_p_col = p_col + d[2]
+
+                if visited[new_p_row][new_p_col]: continue
+                visited[new_p_row][new_p_col] = True
+                queue.append((new_p_row, new_p_col))
+    
+    return visited[enemy.row][enemy.col]
+
 
 def generate_game(grid,player,enemy,gamestate):
     print("Generating new game...")
@@ -125,7 +147,7 @@ def generate_game(grid,player,enemy,gamestate):
                 break
         
         generate_walls(grid, random.randint(ROWS*COLS//4,ROWS*COLS))
-        if is_playable(player, enemy, grid,gamestate):
+        if is_playable(player, enemy, grid,gamestate) and is_not_too_easy(player, enemy, grid):
             break
     gamestate.initpos=(player.row,player.col,enemy.row,enemy.col) #Lưu vị trí ban đầu
     gamestate.storedmove.append((player.row,player.col,enemy.row,enemy.col))
