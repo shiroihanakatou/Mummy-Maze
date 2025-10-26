@@ -63,7 +63,7 @@ def losing_check(player,enemy,gamestate):#Kiểm nếu quái trúng ngườ
                     SCREEN_HEIGHT // 2 - text.get_height() // 2,
                 ),
             )
-            image = pygame.image.load("game/assets/whitefight6.png").convert_alpha()
+            image = pygame.image.load("assets/whitefight6.png").convert_alpha()
             image = pygame.transform.scale(image, (CELL_SIZE,CELL_SIZE))
             rect = image.get_rect(center=(player.col* CELL_SIZE + CELL_SIZE // 2, player.row* CELL_SIZE + CELL_SIZE // 2))
             DISPLAYSURF.blit(image, rect)
