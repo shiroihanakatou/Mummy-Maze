@@ -39,8 +39,10 @@ def run_game():
                 exitbutton.exit_game(e)
                 
         DISPLAYSURF.blit(background,(0,0))        
-        player.draw(DISPLAYSURF)
-        enemy.draw(DISPLAYSURF)
+        if(not gamestate.gameover):
+            player.draw(DISPLAYSURF)
+            enemy.draw(DISPLAYSURF)
+        
         for row in grid:
             for cell in row:
                 cell.draw(DISPLAYSURF,grid)
