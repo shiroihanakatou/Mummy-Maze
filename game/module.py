@@ -13,11 +13,16 @@ def wait(seconds):
         FramePerSec.tick(FPS)
         
         
-def new_enemy_position(e_row,e_col,p_row,p_col,grid):
+def new_enemy_position(e_row,e_col,p_row,p_col,grid,type):
     new_row,new_col = e_row,e_col
     directions = [('up', -1, 0), ('down', 1, 0), 
                 ('left', 0, -1), ('right', 0, 1)]
-    for _ in range(2):
+    if type=="red_mummy":
+        directions = [('left', 0, -1), ('right', 0, 1),('up', -1, 0), ('down', 1, 0)]
+    move=2
+    if type=="red_scorpion":
+        move=1
+    for _ in range(move):
         best_dist = abs(e_row - p_row) + abs(e_col - p_col)
         cell = grid[e_row][e_col]
         for d in directions:
@@ -30,9 +35,9 @@ def new_enemy_position(e_row,e_col,p_row,p_col,grid):
                     e_row = new_row
                     e_col = new_col
                     break
-
         if e_row == p_row and e_col == p_col:
             break
+
     return e_row,e_col
 
 
@@ -89,7 +94,7 @@ def is_playable(player, enemy, grid,gamestate):#Xài BFS kiểm nếu có đ
             if not getattr(cell, d[0]) and 0 <= p_row + d[1] < ROWS and 0 <= p_col + d[2] < COLS:
                 new_p_row = p_row + d[1]
                 new_p_col = p_col + d[2]
-                new_e_row, new_e_col = new_enemy_position(e_row, e_col, new_p_row, new_p_col, grid)
+                new_e_row, new_e_col = new_enemy_position(e_row, e_col, new_p_row, new_p_col, grid,enemy.type)
 
                 if visited[new_p_row][new_p_col][new_e_row][new_e_col] == 0 and not (new_p_row == new_e_row and new_p_col == new_e_col):
                     prev[new_p_row][new_p_col][new_e_row][new_e_col] = (p_row, p_col, e_row, e_col)
@@ -149,7 +154,7 @@ def generate_game(grid,player,enemy,gamestate):
             enemy.col = random.randint(0, COLS - 1)
             if not (enemy.row == 0 and enemy.col == 0):
                 break
-        
+        enemy.type=random.choice(["red_mummy","white_mummy","red_scorpion"])
         generate_walls(grid, random.randint(ROWS*COLS//4,ROWS*COLS))
         if is_playable(player, enemy, grid,gamestate) and is_not_too_easy(player, enemy, grid):
             break

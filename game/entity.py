@@ -100,9 +100,10 @@ class Enemy:
         self.col = random.randint(0, COLS - 1)
         self.direction = "down"  
         self.color = RED
-
+        self.type=random.choice(["red_mummy","white_mummy","red_scorpion"])
+        
         # Load sprite sheet (ví dụ: white_mummy.png)
-        self.sprite_sheet = pygame.image.load("assets/white_mummy6.png").convert_alpha()
+        self.sprite_sheet = pygame.image.load(f"assets/{self.type}6.png").convert_alpha()
         sheet_rect = self.sprite_sheet.get_rect()
 
         # Sprite sheet: 4 hàng, 5 cột
@@ -138,7 +139,7 @@ class Enemy:
         old_row, old_col = self.row, self.col
 
         # Di chuyển theo new_enemy_position
-        self.row, self.col = new_enemy_position(self.row, self.col, player.row, player.col, grid)
+        self.row, self.col = new_enemy_position(self.row, self.col, player.row, player.col, grid,self.type)
 
         # Cập nhật hướng dựa vào thay đổi vị trí
         dr = self.row - old_row
