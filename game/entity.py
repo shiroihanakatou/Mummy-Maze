@@ -1,7 +1,7 @@
 import pygame, sys, random
 from pygame.locals import *
 from variable import *
-from module import new_enemy_position
+from module import new_enemy_position,add_sprite_frames
 
 class Cell:
     def __init__(self, row, col):
@@ -39,9 +39,9 @@ class Player:
         self.col = 0
         self.direction = "down"  # hướng mặc định
         self.color = BLUE
-
+        self.type="explorer"
         # Load sprite sheet
-        self.sprite_sheet = pygame.image.load("assets/explorer6.png").convert_alpha()
+        self.sprite_sheet = pygame.image.load(f"assets/{self.type}6.png").convert_alpha()
         sheet_rect = self.sprite_sheet.get_rect()
 
         self.frame_w = sheet_rect.width // 5
@@ -53,22 +53,7 @@ class Player:
             "down"  : [],
             "right" : []
         }
-        for row in range(4):
-            tmp = []
-            for col in range(5):
-                rect = pygame.Rect(col * self.frame_w,row * self.frame_h,self.frame_w,self.frame_h)
-                frame = self.sprite_sheet.subsurface(rect)
-                tmp.append(frame)
-
-            # Gán từng hàng cho hướng tương ứng
-            if row == 0:
-                self.frames["up"] = tmp
-            elif row == 1:
-                self.frames["right"] = tmp
-            elif row == 2:
-                self.frames["down"] = tmp
-            elif row == 3:
-                self.frames["left"] = tmp
+        add_sprite_frames(self)
 
 
     def move(self, key, grid):
@@ -118,21 +103,7 @@ class Enemy:
             "left": []
         }
 
-        for row in range(4):
-            tmp = []
-            for col in range(5):
-                rect = pygame.Rect(col * self.frame_w, row * self.frame_h, self.frame_w, self.frame_h)
-                frame = self.sprite_sheet.subsurface(rect)
-                tmp.append(frame)
-
-            if row == 0:
-                self.frames["up"] = tmp
-            elif row == 1:
-                self.frames["right"] = tmp
-            elif row == 2:
-                self.frames["down"] = tmp
-            elif row == 3:
-                self.frames["left"] = tmp
+        add_sprite_frames(self)
 
     def move(self, player, grid):
         # Lưu vị trí cũ

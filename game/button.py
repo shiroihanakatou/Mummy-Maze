@@ -48,6 +48,7 @@ class Restartbutton:
             player.row,player.col,enemy.row,enemy.col = gamestate.initpos #Gán vị trí ban đầu
             gamestate.storedmove.clear() #Xóa stack
             gamestate.storedmove.append((player.row,player.col,enemy.row,enemy.col))
+            gamestate.gameover = False
 
 class Newgamebutton:
     def __init__(self):

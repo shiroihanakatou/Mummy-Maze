@@ -12,7 +12,37 @@ def wait(seconds):
         pygame.display.update()
         FramePerSec.tick(FPS)
         
-        
+def add_sprite_frames(entity):
+        entity.sprite_sheet = pygame.image.load(f"assets/{entity.type}6.png").convert_alpha()
+        sheet_rect = entity.sprite_sheet.get_rect()
+
+        # Sprite sheet: 4 hàng, 5 cột
+        entity.frame_w = sheet_rect.width // 5
+        entity.frame_h = sheet_rect.height // 4
+
+        # Lưu các frame cho từng hướng
+        entity.frames = {
+            "up": [],
+            "right": [],
+            "down": [],
+            "left": []
+        }
+
+        for row in range(4):
+            tmp = []
+            for col in range(5):
+                rect = pygame.Rect(col * entity.frame_w, row * entity.frame_h, entity.frame_w, entity.frame_h)
+                frame = entity.sprite_sheet.subsurface(rect)
+                tmp.append(frame)
+
+            if row == 0:
+                entity.frames["up"] = tmp
+            elif row == 1:
+                entity.frames["right"] = tmp
+            elif row == 2:
+                entity.frames["down"] = tmp
+            elif row == 3:
+                entity.frames["left"] = tmp
 def new_enemy_position(e_row,e_col,p_row,p_col,grid,type):
     new_row,new_col = e_row,e_col
     directions = [('up', -1, 0), ('down', 1, 0), 
@@ -155,6 +185,8 @@ def generate_game(grid,player,enemy,gamestate):
             if not (enemy.row == 0 and enemy.col == 0):
                 break
         enemy.type=random.choice(["red_mummy","white_mummy","red_scorpion"])
+        add_sprite_frames(enemy)
+        print(f"Enemy type: {enemy.type}")
         generate_walls(grid, random.randint(ROWS*COLS//4,ROWS*COLS))
         if is_playable(player, enemy, grid,gamestate) and is_not_too_easy(player, enemy, grid):
             break
