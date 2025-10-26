@@ -108,7 +108,7 @@ def is_playable(player, enemy, grid,gamestate):#Xài BFS kiểm nếu có đ
                         return True
     return False
 
-def is_not_too_easy(player, enemy, grid):
+def is_not_too_easy(player, enemy, grid):#Kiểm tra nếu quái có thể bắt được người chơi
     directions = [('up', -1, 0), ('down', 1, 0), ('left', 0, -1), ('right', 0, 1)]
     visited = [[False] * COLS for _ in range(ROWS)]
 

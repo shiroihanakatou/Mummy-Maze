@@ -19,6 +19,8 @@ def run_game():
     gamestate=Gamestate()
     gamestate.initpos=(player.row,player.col,enemy.row,enemy.col)
     generate_game(grid,player,enemy,gamestate)
+    background=pygame.image.load(f"game/assets/floor{ROWS}.jpg").convert()
+    background=pygame.transform.scale(background,(COLS*CELL_SIZE,ROWS*CELL_SIZE))
     while True:
         for e in pygame.event.get():
             if e.type == QUIT:
@@ -36,14 +38,14 @@ def run_game():
                 newgamebutton.newgame_game(e,grid,player,enemy,gamestate)
                 exitbutton.exit_game(e)
                 
-        # Vẽ màn hình và lưới
-        DISPLAYSURF.fill(BLACK)
-        for row in grid:
-            for cell in row:
-                cell.draw(DISPLAYSURF)
-
+        DISPLAYSURF.blit(background,(0,0))        
         player.draw(DISPLAYSURF)
         enemy.draw(DISPLAYSURF)
+        for row in grid:
+            for cell in row:
+                cell.draw(DISPLAYSURF,grid)
+
+
         undobutton.draw(DISPLAYSURF)
         restartbutton.draw(DISPLAYSURF)
         newgamebutton.draw(DISPLAYSURF)
