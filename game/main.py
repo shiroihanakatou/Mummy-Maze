@@ -19,7 +19,7 @@ def run_game():
     gamestate=Gamestate()
     gamestate.initpos=(player.row,player.col,enemy.row,enemy.col)
     generate_game(grid,player,enemy,gamestate)
-    background=pygame.image.load(f"game/assets/floor{ROWS}.jpg").convert()
+    background=pygame.image.load(f"assets/floor{ROWS}.jpg").convert()
     background=pygame.transform.scale(background,(COLS*CELL_SIZE,ROWS*CELL_SIZE))
     while True:
         for e in pygame.event.get():

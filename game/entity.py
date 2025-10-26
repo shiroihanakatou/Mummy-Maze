@@ -12,7 +12,7 @@ class Cell:
         self.down = 0
         self.left = 0
         self.right = 0
-        self.sprite_sheet = pygame.image.load("game/assets/walls6.png").convert_alpha()
+        self.sprite_sheet = pygame.image.load("assets/walls6.png").convert_alpha()
 
     def draw(self, surface,grid):
         x = self.col * CELL_SIZE
@@ -41,7 +41,7 @@ class Player:
         self.color = BLUE
 
         # Load sprite sheet
-        self.sprite_sheet = pygame.image.load("game/assets/explorer6.png").convert_alpha()
+        self.sprite_sheet = pygame.image.load("assets/explorer6.png").convert_alpha()
         sheet_rect = self.sprite_sheet.get_rect()
 
         self.frame_w = sheet_rect.width // 5
@@ -102,7 +102,7 @@ class Enemy:
         self.color = RED
 
         # Load sprite sheet (ví dụ: white_mummy.png)
-        self.sprite_sheet = pygame.image.load("game/assets/white_mummy6.png").convert_alpha()
+        self.sprite_sheet = pygame.image.load("assets/white_mummy6.png").convert_alpha()
         sheet_rect = self.sprite_sheet.get_rect()
 
         # Sprite sheet: 4 hàng, 5 cột
