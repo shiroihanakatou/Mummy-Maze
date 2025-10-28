@@ -72,7 +72,7 @@ def new_enemy_position(e_row,e_col,p_row,p_col,grid,type):
 
 
 def winning_check(player,gamestate):#Kiểm nếu người chơi đến góc
-    if not gamestate.gameover and player.row == ROWS-1 and player.col == COLS-1:
+    if not gamestate.gameover and player.row == gamestate.goal_row and player.col == gamestate.goal_col:
         text = font.render("You Win", True, GREEN)
         DISPLAYSURF.blit(
             text,
@@ -131,7 +131,7 @@ def is_playable(player, enemy, grid,gamestate):#Xài BFS kiểm nếu có đ
                     visited[new_p_row][new_p_col][new_e_row][new_e_col] = 1
                     queue.append((new_p_row, new_p_col, new_e_row, new_e_col))
                     
-                    if new_p_row == ROWS - 1 and new_p_col == COLS - 1:
+                    if new_p_row == gamestate.goal_row and new_p_col == gamestate.goal_col:
                         print("Path found!")
                         path=[]
                         curr_p_row, curr_p_col, curr_e_row, curr_e_col = new_p_row, new_p_col, new_e_row, new_e_col
@@ -184,6 +184,27 @@ def generate_game(grid,player,enemy,gamestate):
             enemy.col = random.randint(0, COLS - 1)
             if not (enemy.row == 0 and enemy.col == 0):
                 break
+        while True:
+            side = random.choice(['up', 'down', 'left', 'right'])
+
+            if side == 'up':
+                gamestate.goal_row = 0
+                gamestate.goal_col = random.randint(0, COLS - 1)
+            elif side == 'down':
+                gamestate.goal_row = ROWS - 1
+                gamestate.goal_col = random.randint(0, COLS - 1)
+            elif side == 'left':
+                gamestate.goal_row = random.randint(0, ROWS - 1)
+                gamestate.goal_col = 0
+            elif side == 'right':
+                gamestate.goal_row = random.randint(0, ROWS - 1)
+                gamestate.goal_col = COLS - 1
+
+            # Đảm bảo ô đích không phải là ô bắt đầu của player hoặc enemy
+            if (gamestate.goal_row, gamestate.goal_col) != (player.row, player.col) and \
+                    (gamestate.goal_row, gamestate.goal_col) != (enemy.row, enemy.col):
+                break
+
         enemy.type=random.choice(["red_mummy","white_mummy","red_scorpion"])
         add_sprite_frames(enemy)
         print(f"Enemy type: {enemy.type}")

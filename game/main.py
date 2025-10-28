@@ -47,6 +47,10 @@ def run_game():
             for cell in row:
                 cell.draw(DISPLAYSURF,grid)
 
+        goal_x = gamestate.goal_col * CELL_SIZE
+        goal_y = gamestate.goal_row * CELL_SIZE
+        goal_rect = pygame.Rect(goal_x, goal_y, CELL_SIZE, CELL_SIZE)
+        pygame.draw.rect(DISPLAYSURF, GREEN, goal_rect, 5)
 
         undobutton.draw(DISPLAYSURF)
         restartbutton.draw(DISPLAYSURF)

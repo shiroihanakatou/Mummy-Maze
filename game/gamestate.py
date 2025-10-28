@@ -8,3 +8,5 @@ class Gamestate:
         self.storedmove = []
         self.initpos = (0,0,0,0)
         self.solution = []
+        self.goal_row = ROWS - 1
+        self.goal_col = COLS - 1
