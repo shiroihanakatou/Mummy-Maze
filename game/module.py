@@ -147,10 +147,11 @@ def is_playable(player, enemy, grid,gamestate):#Xài BFS kiểm nếu có đ
                         return True
     return False
 
-def is_not_too_easy(player, enemy, grid):#Kiểm tra nếu quái có thể bắt được người chơi
+def is_not_too_easy(player, enemy, grid,gamestate):#Kiểm tra nếu quái có thể bắt được người chơi
     directions = [('up', -1, 0), ('down', 1, 0), ('left', 0, -1), ('right', 0, 1)]
     visited = [[False] * COLS for _ in range(ROWS)]
-
+    if len(gamestate.solution) < (ROWS + COLS-1):#Quá dễ
+        return False
     visited[player.row][player.col] = True
     queue = [(player.row, player.col)]
     while queue:
@@ -177,12 +178,12 @@ def generate_game(grid,player,enemy,gamestate):
         for row in grid:
             for cell in row:
                 cell.up , cell.down ,cell.left,cell.right = 0,0,0,0
-        player.row = 0
-        player.col = 0  
+        player.row = random.randint(0, ROWS - 1)
+        player.col = random.randint(0, ROWS - 1)  
         while True:
             enemy.row = random.randint(0, ROWS - 1)
             enemy.col = random.randint(0, COLS - 1)
-            if not (enemy.row == 0 and enemy.col == 0):
+            if not (enemy.row == player.row and player.col == enemy.col):
                 break
         while True:
             side = random.choice(['up', 'down', 'left', 'right'])
@@ -209,7 +210,7 @@ def generate_game(grid,player,enemy,gamestate):
         add_sprite_frames(enemy)
         print(f"Enemy type: {enemy.type}")
         generate_walls(grid, random.randint(ROWS*COLS//4,ROWS*COLS))
-        if is_playable(player, enemy, grid,gamestate) and is_not_too_easy(player, enemy, grid):
+        if is_playable(player, enemy, grid,gamestate) and is_not_too_easy(player, enemy, grid,gamestate):
             break
     gamestate.initpos=(player.row,player.col,enemy.row,enemy.col) #Lưu vị trí ban đầu
     gamestate.storedmove.append((player.row,player.col,enemy.row,enemy.col))
