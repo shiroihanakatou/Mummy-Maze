@@ -30,7 +30,7 @@ def run_game():
             if (e.type == KEYDOWN) and (not gamestate.gameover) and (e.key in ALLOWED_BUTTON):#Khi người dùng gõ phím
                 player.move(e.key, grid) 
                 enemy.move(player, grid) 
-                gamestate.storedmove.append((player.row,player.col,enemy.row,enemy.col)) #Lưu lại vị trí 
+                gamestate.storedmove.append((player.row,player.col,player.direction,enemy.row,enemy.col,enemy.direction)) #Lưu lại vị trí 
                 
             if e.type == MOUSEBUTTONDOWN :#Khi người dùng click chuột
                 undobutton.undo_move(e,player,enemy,gamestate)

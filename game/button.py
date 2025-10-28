@@ -25,7 +25,7 @@ class Undobutton:
             #print(gamestate.storedmove)
             if not gamestate.storedmove:#Nếu stack rỗng sau khi pop
                 gamestate.storedmove.append(last_move) #Gán lại vị trí vừa lấy
-            player.row,player.col,enemy.row,enemy.col = last_move
+            player.row,player.col,player.direction,enemy.row,enemy.col,enemy.direction = last_move
             gamestate.gameover=False #Bỏ thắng thua nếu có
 class Restartbutton:
     def __init__(self):
@@ -47,7 +47,7 @@ class Restartbutton:
         if self.rect.collidepoint(event.pos):
             player.row,player.col,enemy.row,enemy.col = gamestate.initpos #Gán vị trí ban đầu
             gamestate.storedmove.clear() #Xóa stack
-            gamestate.storedmove.append((player.row,player.col,enemy.row,enemy.col))
+            gamestate.storedmove.append((player.row,player.col,player.direction,enemy.row,enemy.col,enemy.direction))
             gamestate.gameover = False
 
 class Newgamebutton:

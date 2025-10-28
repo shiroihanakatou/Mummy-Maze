@@ -218,7 +218,7 @@ def generate_game(grid,player,enemy,gamestate):
         if is_playable(player, enemy, grid,gamestate) and is_not_too_easy(player, enemy, grid,gamestate):
             break
     gamestate.initpos=(player.row,player.col,enemy.row,enemy.col) #Lưu vị trí ban đầu
-    gamestate.storedmove.append((player.row,player.col,enemy.row,enemy.col))
+    gamestate.storedmove.append((player.row,player.col,player.direction,enemy.row,enemy.col,enemy.direction))
     gamestate.gameover = False
     print("New game generated.")
     print(gamestate.solution)
