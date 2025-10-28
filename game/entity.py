@@ -59,16 +59,16 @@ class Player:
     def move(self, key, grid):
         cell = grid[self.row][self.col]
 
-        if key == K_UP and not cell.up and self.row > 0:
+        if (key == K_UP or key == K_w) and not cell.up and self.row > 0:
             self.row -= 1
             self.direction = "up"
-        elif key == K_DOWN and not cell.down and self.row < ROWS - 1:
+        elif (key == K_DOWN or key == K_s) and not cell.down and self.row < ROWS - 1:
             self.row += 1
             self.direction = "down"
-        elif key == K_LEFT and not cell.left and self.col > 0:
+        elif (key == K_LEFT or key == K_a) and not cell.left and self.col > 0:
             self.col -= 1
             self.direction = "left"
-        elif key == K_RIGHT and not cell.right and self.col < COLS - 1:
+        elif (key == K_RIGHT or key == K_d) and not cell.right and self.col < COLS - 1:
             self.col += 1
             self.direction = "right"
 

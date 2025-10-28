@@ -27,7 +27,7 @@ def run_game():
                 pygame.quit()
                 sys.exit()
 
-            if e.type == KEYDOWN and not gamestate.gameover:#Khi người dùng gõ phím
+            if (e.type == KEYDOWN) and (not gamestate.gameover) and (e.key in ALLOWED_BUTTON):#Khi người dùng gõ phím
                 player.move(e.key, grid) 
                 enemy.move(player, grid) 
                 gamestate.storedmove.append((player.row,player.col,enemy.row,enemy.col)) #Lưu lại vị trí 

@@ -1,9 +1,11 @@
 import pygame
+from pygame.locals import *
 
 pygame.init()
 FPS = 60
 FramePerSec = pygame.time.Clock()
 
+ALLOWED_BUTTON = [K_UP, K_w, K_DOWN, K_s, K_LEFT, K_a, K_RIGHT, K_d, K_SPACE]
 
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
