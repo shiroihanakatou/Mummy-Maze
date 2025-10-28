@@ -168,7 +168,12 @@ def is_not_too_easy(player, enemy, grid,gamestate):#Kiểm tra nếu quái co
                 visited[new_p_row][new_p_col] = True
                 queue.append((new_p_row, new_p_col))
     
-    return visited[enemy.row][enemy.col]
+    for r in range(ROWS):
+        for c in range(COLS):
+            if visited[r][c]==0:
+                #print("Some cells are unreachable.")
+                return False
+    return True
 
 
 def generate_game(grid,player,enemy,gamestate):
@@ -227,7 +232,10 @@ def generate_walls(grid, num_walls):#Random generate tường
             r = random.randint(1, ROWS - 1)
             c = random.randint(1, COLS - 1)
             d = random.choice(directions)
-            if 0 <= r + d[2] < ROWS and 0 <= c + d[3] < COLS and not getattr(grid[r][c],d[0]):#Tường trong lưới và chưa có
+            wall_cnt=0
+            for i in range(0):
+                wall_cnt+=getattr(grid[r][c],d[0])
+            if 0 <= r + d[2] < ROWS and 0 <= c + d[3] < COLS and not getattr(grid[r][c],d[0]) and wall_cnt<=2:#Tường trong lưới và chưa có
                 setattr(grid[r][c],d[0], 1)  
                 setattr(grid[r + d[2]][c + d[3]],d[1], 1)  
                 no_wall = False
