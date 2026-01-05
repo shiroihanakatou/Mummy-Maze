@@ -222,67 +222,149 @@ def is_playable(player, enemy, grid, gamestate):
 
 
 def read_map_json(filepath: str):
-    """Đọc JSON theo Option B: tiles + walls_v + walls_h."""
+    """Đọc JSON Option B (chuẩn hoá).
+
+    Schema chuẩn (readable):
+      - size: {"rows": R, "cols": C}
+      - exit: {"rows": r, "cols": c}  (exit tách riêng để cho phép trùng ô với item/quái)
+      - tiles: [R strings length C]
+      - walls_v: [R strings length C+1] (| là tường)
+      - walls_h: [R+1 strings length C] (- là tường)
+
+    Chuẩn hoá ký tự:
+      Tiles (đồ nằm trong ô):
+        P player
+        W white mummy
+        R red mummy
+        S scorpion
+        K key
+        T trap
+        . empty
+        (E legacy hỗ trợ nhưng không khuyến khích, vì exit đã tách riêng)
+
+      walls_h (tường ngang + gate):
+        - wall (chặn)
+        . no wall
+        = gate closed (chặn)
+        ~ gate open (không chặn)
+    """
     with open(filepath, "r", encoding="utf-8") as f:
         data = json.load(f)
+
     rows = int(data["size"]["rows"])
     cols = int(data["size"]["cols"])
     tiles = data["tiles"]
     walls_v = data["walls_v"]
     walls_h = data["walls_h"]
-    return rows, cols, tiles, walls_v, walls_h
 
+    exit_pos = None
+    ex = data.get("exit")
+    if isinstance(ex, dict):
+        er = ex.get("rows", ex.get("row"))
+        ec = ex.get("cols", ex.get("col"))
+        if er is not None and ec is not None:
+            exit_pos = (int(er), int(ec))
 
-def apply_map_to_grid(rows, cols, tiles, walls_v, walls_h, grid, player, enemy, gamestate):
-    """Gán tường + entity + goal từ dữ liệu map đã đọc."""
+    return rows, cols, tiles, walls_v, walls_h, exit_pos
+
+def apply_map_to_grid(rows, cols, tiles, walls_v, walls_h, grid, player, enemy, gamestate, exit_pos=None):
+    """Gán tường + entity + items + goal từ map.
+
+    - Exit ưu tiên theo exit_pos (field 'exit' trong JSON).
+    - Cho phép exit trùng ô với K/T/quái/player vì exit không nằm trong tiles.
+    - Gate được lưu trong walls_h (edge) với ký tự ~/=.
+    """
     # reset walls
     for r in range(rows):
         for c in range(cols):
             cell = grid[r][c]
             cell.up = cell.down = cell.left = cell.right = 0
 
-    # walls
-    for r in range(rows):
+    # init containers in gamestate (để adventure/core dùng được ngay)
+    if not hasattr(gamestate, "keys"):
+        gamestate.keys = set()
+    if not hasattr(gamestate, "traps"):
+        gamestate.traps = set()
+    if not hasattr(gamestate, "gates_h"):
+        # (rh, c) -> True(open) / False(closed), rh in [0..ROWS]
+        gamestate.gates_h = {}
+
+    gamestate.keys.clear()
+    gamestate.traps.clear()
+    gamestate.gates_h.clear()
+
+    # parse gates from walls_h (single source of truth)
+    for rh in range(rows + 1):
+        line = walls_h[rh]
         for c in range(cols):
+            ch = line[c]
+            if ch == "~":
+                gamestate.gates_h[(rh, c)] = True
+                grid[rh - 1][c].down = 2
+            elif ch == "=":
+                gamestate.gates_h[(rh, c)] = False
+                grid[rh - 1][c].down = 3
+
+    # apply walls (walls_v + walls_h with gate semantics)
+    for r in range(rows):
+        for c in range(cols):   
             cell = grid[r][c]
+
+            # vertical walls: only '|' blocks
             cell.left = 1 if walls_v[r][c] == "|" else 0
             cell.right = 1 if walls_v[r][c + 1] == "|" else 0
-            cell.up = 1 if walls_h[r][c] == "-" else 0
-            cell.down = 1 if walls_h[r + 1][c] == "-" else 0
 
-    # entities
+            # horizontal walls: '-' or '=' blocks; '.' or '~' open
+            up_ch = walls_h[r][c]
+            down_ch = walls_h[r + 1][c]
+            cell.up = 1 if up_ch in ("-", "=") else 0
+            cell.down = 1 if down_ch in ("-", "=") else 0
+
+    # entities + items from tiles (no gate here anymore)
     found_p = False
     found_e = False
-    found_goal = False
+    legacy_goal = None
+
     for r in range(rows):
         line = tiles[r]
         for c in range(cols):
             ch = line[c]
+
             if ch == "P":
                 player.row, player.col = r, c
                 found_p = True
-            elif ch == "E":
-                gamestate.goal_row, gamestate.goal_col = r, c
-                found_goal = True
+
             elif ch in ("W", "R", "S"):
                 enemy.row, enemy.col = r, c
-                if ch == "W":
-                    enemy.type = "white_mummy"
-                elif ch == "R":
-                    enemy.type = "red_mummy"
-                else:
-                    enemy.type = "red_scorpion"
+                enemy.type = {"W": "white_mummy", "R": "red_mummy", "S": "red_scorpion"}[ch]
                 found_e = True
 
+            elif ch == "K":
+                gamestate.keys.add((r, c))
+
+            elif ch == "T":
+                gamestate.traps.add((r, c))
+
+            elif ch == "E":
+                # legacy support (không khuyến khích)
+                legacy_goal = (r, c)
+
+    # defaults
     if not found_p:
         player.row, player.col = 0, 0
     if not found_e:
         enemy.row, enemy.col = rows - 1, cols - 1
         enemy.type = "white_mummy"
-    if not found_goal:
+
+    # goal priority: exit_pos > legacy 'E' > fallback
+    if exit_pos is not None:
+        gamestate.goal_row, gamestate.goal_col = exit_pos
+    elif legacy_goal is not None:
+        gamestate.goal_row, gamestate.goal_col = legacy_goal
+    else:
         gamestate.goal_row, gamestate.goal_col = rows - 1, cols - 1
 
-    # rebuild enemy sprite if type was changed by map
+    # rebuild enemy sprite if type changed by map
     try:
         enemy.sprite_sheet = pygame.image.load(f"game/assets/{enemy.type}6.png").convert_alpha()
         sheet_rect = enemy.sprite_sheet.get_rect()
@@ -294,7 +376,7 @@ def apply_map_to_grid(rows, cols, tiles, walls_v, walls_h, grid, player, enemy, 
 
     add_sprite_frames(enemy)
 
-    # reset game state
+    # reset game state bookkeeping
     gamestate.initpos = (player.row, player.col, enemy.row, enemy.col)
     gamestate.storedmove.clear()
     gamestate.storedmove.append((player.row, player.col, player.direction, enemy.row, enemy.col, enemy.direction))

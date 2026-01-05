@@ -9,6 +9,9 @@ from entity import Player, Enemy, Cell
 from screen.button import Undobutton, Restartbutton, Newgamebutton, Exitbutton, StartButton, Button
 from module.gamestate import Gamestate
 
+# Explicit imports for map I/O (single source of truth in module/module.py)
+from module.module import read_map_json, apply_map_to_grid
+
 # NEW: import module objects to sync runtime constants after changing difficulty / loading maps
 import variable as V
 import module.module as module_mod
@@ -53,11 +56,14 @@ def run_game():
     pygame.init()
     screen_main = ScreenManager(SCREEN_WIDTH, SCREEN_HEIGHT)
 
+    GAME_DIR = Path(__file__).resolve().parent
+    ASSETS_DIR = GAME_DIR / "assets"
+
     # ===== music loop from open =====
     try:
         pygame.mixer.init()
-        music_path = os.path.join("game", "assets", "music", "game.it")
-        pygame.mixer.music.load(music_path)
+        music_path = ASSETS_DIR / "music" / "game.it"
+        pygame.mixer.music.load(str(music_path))
         pygame.mixer.music.play(-1)
     except Exception as ex:
         print("[music] load failed:", ex)
@@ -68,7 +74,7 @@ def run_game():
     enemy = Enemy()
 
     font = pygame.font.SysFont("Verdana", 60)
-    menu_font = pygame.font.Font("game/assets/font/romeo.ttf", 64)
+    menu_font = pygame.font.Font(str(ASSETS_DIR / "font" / "romeo.ttf"), 64)
 
     start_button = StartButton()
     undobutton = Undobutton()
@@ -84,10 +90,10 @@ def run_game():
 
     generate_game(grid, player, enemy, gamestate)
 
-    start_bg = pygame.image.load("game/assets/screen/bg_start_1.jpg").convert_alpha()
+    start_bg = pygame.image.load(str(ASSETS_DIR / "screen" / "bg_start_1.jpg")).convert_alpha()
     start_bg = pygame.transform.smoothscale(start_bg, (SCREEN_WIDTH + 10, SCREEN_HEIGHT + 60))
 
-    modeSelect_bg = pygame.image.load("game/assets/screen/mode_bg.jpg").convert()
+    modeSelect_bg = pygame.image.load(str(ASSETS_DIR / "screen" / "mode_bg.jpg")).convert()
     modeSelect_bg = pygame.transform.smoothscale(modeSelect_bg, (SCREEN_WIDTH + 10, SCREEN_HEIGHT + 60))
 
     # Selection screen buttons
@@ -96,7 +102,7 @@ def run_game():
     adventure_button = TextButton("ADVENTURE", (465, 605), menu_font, idle_color=(0, 0, 0), hover_color=(255, 0, 0))
     quit_button = TextButton("QUIT GAME", (835, 605), menu_font, idle_color=(0, 0, 0), hover_color=(255, 0, 0))
 
-    # Difficulty screen UI (the "old" layout you sent)
+    # Difficulty screen UI (old layout)
     choose_diff_text = menu_font.render("CHOOSE DIFFICULTY", True, (0, 0, 0))
     choose_diff_rect = choose_diff_text.get_rect(center=(SCREEN_WIDTH // 2, 450))
 
@@ -108,38 +114,36 @@ def run_game():
     def _load_floor():
         # floor6.jpg / floor8.jpg / floor10.jpg
         try:
-            img = pygame.image.load(f"game/assets/floor{ROWS}.jpg").convert()
+            img = pygame.image.load(str(ASSETS_DIR / f"floor{ROWS}.jpg")).convert()
         except Exception:
-            img = pygame.image.load("game/assets/floor10.jpg").convert()
+            img = pygame.image.load(str(ASSETS_DIR / "floor10.jpg")).convert()
         return pygame.transform.smoothscale(img, (int(COLS * CELL_SIZE), int(ROWS * CELL_SIZE)))
 
     background = _load_floor()
 
-    backdrop = pygame.image.load("game/assets/backdrop_1.png").convert()
+    backdrop = pygame.image.load(str(ASSETS_DIR / "backdrop_1.png")).convert()
     backdrop = pygame.transform.smoothscale(backdrop, (SCREEN_WIDTH + 10, SCREEN_HEIGHT + 60))
 
-    backdrop_s = pygame.image.load("game/assets/backdrop.png").convert()
+    backdrop_s = pygame.image.load(str(ASSETS_DIR / "backdrop.png")).convert()
     backdrop_s = pygame.transform.smoothscale(backdrop_s, (X, Y))
 
-    # ===== Next level overlay =====
+    # ===== Next level overlay (robust path) =====
+    nextlevel_img = None
+    for p in (
+        ASSETS_DIR / "nextlevel.jpg",
+        ASSETS_DIR / "images" / "nextlevel.jpg",
+        ASSETS_DIR / "screen" / "nextlevel.jpg",
+    ):
+        if p.exists():
+            nextlevel_img = pygame.image.load(str(p)).convert()
+            break
+    if nextlevel_img is not None:
+        nextlevel_img = pygame.transform.smoothscale(nextlevel_img, (SCREEN_WIDTH - OFFSET_X_1, SCREEN_HEIGHT))
 
-    nextlevel_img = pygame.image.load("game/assets/images/nextlevel.jpg").convert()
-
-
-    nextlevel_img = pygame.transform.smoothscale(nextlevel_img, (SCREEN_WIDTH-OFFSET_X_1, SCREEN_HEIGHT))
-
-    nextlevel_btn_font = pygame.font.Font("game/assets/font/romeo.ttf", 52)
+    nextlevel_btn_font = pygame.font.Font(str(ASSETS_DIR / "font" / "romeo.ttf"), 52)
     nextlevel_button = TextButton(
-        "ENTER THE NEXT CHAMBER",
-        (OFFSET_X_1+(SCREEN_WIDTH-OFFSET_X_1) // 2, 600),
-        nextlevel_btn_font,
-        idle_color=(255, 255, 0),
-        hover_color=(255, 255, 255),
-        min_size=(540, 90),
-    )
-    nextlevel_selection_button = TextButton(
-        "RETURN TO MODE SELECTION",
-        (OFFSET_X_1+(SCREEN_WIDTH-OFFSET_X_1) // 2, 650),
+        "Go to next level",
+        (OFFSET_X_1 + (SCREEN_WIDTH - OFFSET_X_1) // 2, 600),
         nextlevel_btn_font,
         idle_color=(255, 255, 0),
         hover_color=(255, 255, 255),
@@ -183,47 +187,39 @@ def run_game():
         gamestate.state = "PLAYING"
         generate_game(grid, player, enemy, gamestate)
 
-    def _level_json_path(chapter: int, level: int) -> str:
-        return os.path.join("game", "assets", "map", f"level{chapter}-{level}.json")
-
-    def _apply_walls_from_option_b(grid, walls_v, walls_h):
-        # walls_v: rows strings, each length cols+1 (| = wall)
-        # walls_h: rows+1 strings, each length cols (- = wall)
-        for r in range(ROWS):
-            for c in range(COLS):
-                cell = grid[r][c]
-                cell.left  = 1 if walls_v[r][c] == "|" else 0
-                cell.right = 1 if walls_v[r][c + 1] == "|" else 0
-                cell.up    = 1 if walls_h[r][c] == "-" else 0
-                cell.down  = 1 if walls_h[r + 1][c] == "-" else 0
-
     def _load_adventure_level(chapter: int, level: int) -> bool:
-        """Load JSON Option B from game/assets/map/level{chapter}-{level}.json.
-        Returns True if loaded, else False.
+        """Adventure: load level JSON tại assets/map/level{chapter}-{level}.json.
+        Parsing/Apply được chuẩn hoá ở module/module.py (read_map_json/apply_map_to_grid).
         """
         nonlocal grid, player, enemy, gamestate, background
 
-        path = _level_json_path(chapter, level)
-        if not os.path.exists(path):
+        path = ASSETS_DIR / "map" / f"level{chapter}-{level}.json"
+        if not path.exists():
             print("[adventure] missing:", path)
             return False
 
         try:
-            with open(path, "r", encoding="utf-8") as f:
-                data = json.load(f)
+            rows, cols, tiles, walls_v, walls_h, exit_pos = read_map_json(str(path))
         except Exception as ex:
-            print("[adventure] json load failed:", ex)
+            print("[adventure] read_map_json failed:", ex)
             return False
-
-        size = data.get("size") or {}
-        rows = int(size.get("rows", 10))
-        cols = int(size.get("cols", 10))
 
         if rows != cols:
-            print("[adventure] only square maps supported right now:", rows, cols)
+            print("[adventure] only square maps supported:", rows, cols)
             return False
         if rows not in (6, 8, 10):
-            print("[adventure] size must be 6/8/10 for now:", rows)
+            print("[adventure] size must be 6/8/10:", rows)
+            return False
+
+        # basic shape validation (fail fast)
+        if len(tiles) != rows or any(len(s) != cols for s in tiles):
+            print("[adventure] tiles shape mismatch")
+            return False
+        if len(walls_v) != rows or any(len(s) != cols + 1 for s in walls_v):
+            print("[adventure] walls_v shape mismatch")
+            return False
+        if len(walls_h) != rows + 1 or any(len(s) != cols for s in walls_h):
+            print("[adventure] walls_h shape mismatch")
             return False
 
         # rebuild everything to match map size
@@ -242,53 +238,7 @@ def run_game():
 
         background = _load_floor()
 
-        tiles = data.get("tiles") or []
-        walls_v = data.get("walls_v") or []
-        walls_h = data.get("walls_h") or []
-
-        # validate basic shape
-        if len(tiles) != ROWS:
-            print("[adventure] tiles rows mismatch")
-            return False
-        if len(walls_v) != ROWS or any(len(s) != COLS + 1 for s in walls_v):
-            print("[adventure] walls_v shape mismatch")
-            return False
-        if len(walls_h) != ROWS + 1 or any(len(s) != COLS for s in walls_h):
-            print("[adventure] walls_h shape mismatch")
-            return False
-
-        _apply_walls_from_option_b(grid, walls_v, walls_h)
-
-        # parse tiles: place P, enemy (W/R/S), and exit E
-        found_enemy = False
-        found_exit = False
-        for r in range(ROWS):
-            row_str = tiles[r]
-            if len(row_str) != COLS:
-                print("[adventure] tiles cols mismatch")
-                return False
-            for c in range(COLS):
-                ch = row_str[c]
-                if ch == "P":
-                    player.row, player.col = r, c
-                elif ch in ("W", "R", "S"):
-                    if not found_enemy:
-                        enemy.row, enemy.col = r, c
-                        enemy.type = {"W": "white_mummy", "R": "red_mummy", "S": "red_scorpion"}[ch]
-                        enemy.frames = {"up": [], "right": [], "down": [], "left": []}
-                        add_sprite_frames(enemy)
-                        found_enemy = True
-                elif ch == "E":
-                    gamestate.goal_row, gamestate.goal_col = r, c
-                    found_exit = True
-
-        if not found_exit:
-            # fallback: default goal
-            gamestate.goal_row, gamestate.goal_col = ROWS - 1, COLS - 1
-
-        gamestate.initpos = (player.row, player.col, enemy.row, enemy.col)
-        gamestate.storedmove.clear()
-        gamestate.storedmove.append((player.row, player.col, player.direction, enemy.row, enemy.col, enemy.direction))
+        apply_map_to_grid(rows, cols, tiles, walls_v, walls_h, grid, player, enemy, gamestate, exit_pos=exit_pos)
         return True
 
     def _advance_level(chapter: int, level: int):
@@ -326,10 +276,10 @@ def run_game():
         elif gamestate.state == "NEXTLEVEL":
             if nextlevel_button.rect.collidepoint(mouse_pos):
                 hover_any_button = True
-            if nextlevel_selection_button.rect.collidepoint(mouse_pos):
-                hover_any_button = True
 
-        pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND if hover_any_button else pygame.SYSTEM_CURSOR_ARROW)
+        pygame.mouse.set_cursor(
+            pygame.SYSTEM_CURSOR_HAND if hover_any_button else pygame.SYSTEM_CURSOR_ARROW
+        )
 
         for e in pygame.event.get():
             if e.type == QUIT:
@@ -354,7 +304,6 @@ def run_game():
                         gamestate.state = "DIFFICULTY"
 
                     elif adventure_button.is_clicked(mouse_pos):
-                        # start at chapter1-level1
                         ok = _load_adventure_level(1, 1)
                         if ok:
                             gamestate.mode = "adventure"
@@ -392,10 +341,6 @@ def run_game():
                                 gamestate.state = "PLAYING"
                             else:
                                 gamestate.state = "SELECTION"
-                    elif nextlevel_selection_button.is_clicked(mouse_pos):
-                        gamestate.state = "SELECTION"
-                        gamestate.mode = "classic"
-                        
 
             elif gamestate.state == "PLAYING":
                 if (e.type == KEYDOWN) and (not gamestate.gameover) and (e.key in ALLOWED_BUTTON):
@@ -448,9 +393,11 @@ def run_game():
             back_button.draw(surface, mouse_pos)
 
         elif gamestate.state == "NEXTLEVEL":
-            surface.blit(nextlevel_img, (OFFSET_X_1, 0))
+            if nextlevel_img is not None:
+                surface.blit(nextlevel_img, (OFFSET_X_1, 0))
+            else:
+                surface.blit(modeSelect_bg, (0, 0))
             nextlevel_button.draw(surface, mouse_pos)
-            nextlevel_selection_button.draw(surface, mouse_pos)
 
         elif gamestate.state == "PLAYING":
             surface.blit(backdrop, (0, 0))

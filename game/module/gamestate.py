@@ -10,6 +10,21 @@ class Gamestate:
         self.chapter = 1
         self.level = 1
 
+
+        # ui state (main đang set lại, nhưng để default cho chắc)
+        self.state = "Home"
+
+        # ===== map items / mechanics =====
+        # positions are tuples (r,c) in grid coordinates
+        self.keys = set()
+        self.traps = set()
+
+        # gates on horizontal walls_h: key is (rh, c) where rh in [0..ROWS]
+        # value True=open, False=closed
+        self.gates_h = {}
+
+        # inventory / flags
+        self.has_key = False
         # result: None | "win" | "lose" (để main biết show overlay nextlevel)
         self.result = None
 
@@ -19,7 +34,11 @@ class Gamestate:
         self.solution = []
         self.goal_row = ROWS - 1
         self.goal_col = COLS - 1
-        self.sprite_sheet = pygame.image.load("game/assets/stairs6.png").convert_alpha()
+        # stairs sprite depends on current board size; fallback to stairs6.png
+        try:
+            self.sprite_sheet = pygame.image.load(f"game/assets/stairs{ROWS}.png").convert_alpha()
+        except Exception:
+            self.sprite_sheet = pygame.image.load("game/assets/stairs6.png").convert_alpha()
 
         self._build_stairs_frames()
         
@@ -74,6 +93,15 @@ class Gamestate:
 
         surface.blit(frame, stair_rect)
 
+def reset_items(self):
+    self.keys.clear()
+    self.traps.clear()
+    self.gates_h.clear()
+    self.has_key = False
 
-                
-                
+def set_gate_h(self, rh: int, c: int, is_open: bool):
+    self.gates_h[(rh, c)] = bool(is_open)
+
+def get_gate_h(self, rh: int, c: int):
+    return self.gates_h.get((rh, c), None)
+
