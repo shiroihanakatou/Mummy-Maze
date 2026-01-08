@@ -4,7 +4,7 @@ from variable import *
 from module import generate_game
 
 # NEW: snapshot helper để restart/undo đúng với multi-enemy (Phase 1)
-from module.module import make_snapshot, apply_snapshot
+from module.module import create_tuple, apply_tuple
 
 
 def _iter_enemies(enemy_or_list):
@@ -24,7 +24,6 @@ def reset_actor_animation(actor):
     if hasattr(actor, "anim_timer"):
         actor.anim_timer = 0.0
 
-    # dừng tween/trượt
     if hasattr(actor, "render_dx"):
         actor.render_dx = 0.0
     if hasattr(actor, "render_dy"):
@@ -53,10 +52,45 @@ def reset_gamestate_anim_flags(gamestate):
 
     gamestate.cancel_animation = True
 
-    # Phase 1: snapshot append theo turn trong main
     if hasattr(gamestate, "pending_snapshot"):
         gamestate.pending_snapshot = False
 
+class TextButton:
+    """ Tạo button dạng text với font được load và hiệu ứng hover đổi màu chữ. """
+    def __init__(
+        self,
+        text: str,
+        center_xy: tuple[int, int],
+        font: pygame.font.Font,
+        idle_color=(0, 0, 0),
+        hover_color=(255, 0, 0),
+        min_size=(280, 100),
+    ):
+        self.text = text
+        self.font = font
+        self.idle_color = idle_color
+        self.hover_color = hover_color
+
+        self._surf_idle = self.font.render(self.text, True, self.idle_color)
+        self._surf_hover = self.font.render(self.text, True, self.hover_color)
+
+        w = max(self._surf_idle.get_width(), self._surf_hover.get_width(), min_size[0])
+        h = max(self._surf_idle.get_height(), self._surf_hover.get_height(), min_size[1])
+        self.rect = pygame.Rect(0, 0, w, h)
+        self.rect.center = center_xy
+
+    def draw(self, surface: pygame.Surface, mouse_pos: tuple[int, int]):
+        hovered = self.rect.collidepoint(mouse_pos)
+        surf = self._surf_hover if hovered else self._surf_idle
+        surface.blit(surf, surf.get_rect(center=self.rect.center))
+        return hovered
+
+    def draw_at(self, surface, new_pos, mouse_pos):
+        self.rect.center = new_pos
+        self.draw(surface, mouse_pos)
+
+    def is_clicked(self, mouse_pos: tuple[int, int]):
+        return self.rect.collidepoint(mouse_pos)
 
 class Newgamebutton:
     def __init__(self):
@@ -106,10 +140,10 @@ class Newgamebutton:
         # Pass the original enemy list so it gets populated
         if isinstance(enemy, list):
             generate_game(grid, player, enemy, gamestate)
-            snap = make_snapshot(player, enemy, gamestate)
+            snap = create_tuple(player, enemy, gamestate)
         else:
             generate_game(grid, player, enemies_list, gamestate)
-            snap = make_snapshot(player, enemies_list, gamestate)
+            snap = create_tuple(player, enemies_list, gamestate)
 
         # init snapshot chuẩn
         gamestate.initpos = snap
@@ -138,8 +172,6 @@ class Restartbutton:
     def is_clicked(self, mouse_pos):
         return self.rect.collidepoint(mouse_pos)
 
-    # giữ API gốc: (event, gamestate, player, enemy)
-    # enemy có thể là list
     def restart_game(self, event, player, enemy, gamestate, grid):
 
         # cắt ngang mọi animation
@@ -151,9 +183,8 @@ class Restartbutton:
         if getattr(gamestate, "initpos", None) is None:
             return
         
-        # apply snapshot (multi enemy) on the original list reference
         enemies_ref = enemy if isinstance(enemy, list) else _iter_enemies(enemy)
-        apply_snapshot(gamestate.initpos, player, enemies_ref, grid, gamestate)
+        apply_tuple(gamestate.initpos, player, enemies_ref, grid, gamestate)
         gamestate.storedmove.clear()
         gamestate.storedmove.append(gamestate.initpos)
         gamestate.gameover = False
@@ -181,9 +212,7 @@ class Undobutton:
 
     def is_clicked(self, mouse_pos):
         return self.rect.collidepoint(mouse_pos)
-
-    # giữ API gốc: (event, player, enemy, gamestate)
-    # enemy có thể là list
+    
     def undo_move(self, event, player, enemy, gamestate, grid):
 
         reset_actor_animation(player)
@@ -201,7 +230,7 @@ class Undobutton:
         # apply state trước đó
         prev = gamestate.storedmove[-1]
         enemies_ref = enemy if isinstance(enemy, list) else _iter_enemies(enemy)
-        apply_snapshot(prev, player, enemies_ref, grid, gamestate)
+        apply_tuple(prev, player, enemies_ref, grid, gamestate)
         gamestate.gameover = False
         gamestate.result = None
         

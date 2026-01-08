@@ -34,14 +34,13 @@ def wait(seconds):
         pygame.display.update()
         FramePerSec.tick(FPS)
 
-def make_snapshot(player, enemies, gamestate=None):
+def create_tuple(player, enemies, gamestate=None):
     """Snapshot cho undo/restart: (p_row, p_col, p_dir, enemies_state_tuple, keys, gates_h)."""
     enemies_state = tuple(
         (e.row, e.col, getattr(e, "direction", "down"), getattr(e, "type", None))
         for e in enemies
     )
     
-    # Phase 3: Include keys and gate states in snapshot
     keys_state = set(gamestate.keys) if gamestate else set()
     gates_state = dict(gamestate.gates_h) if gamestate else {}
     
@@ -54,9 +53,8 @@ def make_snapshot(player, enemies, gamestate=None):
         gates_state
     )
 
-def apply_snapshot(snapshot, player, enemies, grid=None, gamestate=None):
+def apply_tuple(snapshot, player, enemies, grid=None, gamestate=None):
     """Apply snapshot và rebuild enemies list nếu cần."""
-    # Support old format (4 items) and new format (6 items)
     if len(snapshot) == 4:
         p_row, p_col, p_dir, enemies_state = snapshot
         keys_state = None
@@ -108,7 +106,6 @@ def apply_snapshot(snapshot, player, enemies, grid=None, gamestate=None):
         if hasattr(e, "pending_steps"):
             e.pending_steps.clear()
     
-    # Phase 3: Restore keys and gate states
     if keys_state is not None and gamestate is not None:
         gamestate.keys = set(keys_state)
     
@@ -265,30 +262,29 @@ def losing_check(surface, font, player, enemies, gamestate):
 
             # Ensure undo snapshot exists before starting death
             if getattr(gamestate, "pending_snapshot", False):
-                gamestate.storedmove.append(make_snapshot(player, enemies, gamestate))
+                gamestate.storedmove.append(create_tuple(player, enemies, gamestate))
                 gamestate.pending_snapshot = False
             gamestate.state = "DEATH_ANIM"
             start_stage = "fight" if cause == "stung" else "dust"
-            # Sync animation duration with sound:
-            # pummel.mp3 = 0.50s for red/white fights; poison + 20 frames for stung = 1.7s
+            # Sync animation duration with sound
             if cause == "stung":
-                fight_dur = 1.7  # 20 frames at 12 fps = 1.67s
-                # Play poison sound immediately
+                fight_dur = 1.7 
+                # Play poison sound 
                 if gamestate.sfx.get("poison") is not None:
                     try:
                         gamestate.sfx["poison"].play()
                     except Exception as e:
                         print(f"[Sound] poison play failed: {e}")
             elif cause == "red":
-                fight_dur = 0.5  # Match pummel.mp3 (0.50s)
-                # Play pummel sound immediately
+                fight_dur = 0.5  
+                # Play pummel sound
                 if gamestate.sfx.get("pummel") is not None:
                     try:
                         gamestate.sfx["pummel"].play()
                     except Exception as e:
                         print(f"[Sound] pummel play failed: {e}")
             else:  # white
-                fight_dur = 0.5  # Match pummel.mp3
+                fight_dur = 0.5  
                 if gamestate.sfx.get("pummel") is not None:
                     try:
                         gamestate.sfx["pummel"].play()
@@ -311,8 +307,6 @@ def losing_check(surface, font, player, enemies, gamestate):
                 "fight_fps": 12,
             }
             break
-
-# Progress / maps / options UI helpers (from PV branch, adapted for enemies list)
 class ProgressManager:
     def __init__(self, ASSETS_DIR):
         self.current_chapter = 1
@@ -560,7 +554,7 @@ def apply_map_to_grid(rows, cols, tiles, walls_v, walls_h, grid, player, enemies
     else:
         gamestate.goal_row, gamestate.goal_col = rows - 1, cols - 1
 
-    gamestate.initpos = make_snapshot(player, enemies, gamestate)
+    gamestate.initpos = create_tuple(player, enemies, gamestate)
     gamestate.storedmove.clear()
     gamestate.storedmove.append(gamestate.initpos)
     gamestate.pending_snapshot = False
@@ -624,13 +618,11 @@ def path_finding(player, enemy, grid, gamestate):
     start_enemy_state = encode_enemies(enemies_list)
     start = (player.row, player.col, start_enemy_state, start_gate_state)
 
-    # Visited as set of tuples for memory efficiency
-    # State includes full enemy info (type + position) and order matters
     visited = {start}
     prev = {}
     q = deque([start])
     iterations = 0
-    max_iterations = 100000  # Prevent infinite loops
+    max_iterations = 100000  
 
     def gate_is_open(rh, c, gate_state_tuple):
         if (rh, c) not in gate_index:
@@ -690,7 +682,6 @@ def path_finding(player, enemy, grid, gamestate):
     while q:
         iterations += 1
         if iterations > max_iterations:
-            # print(f"[BFS] Max iterations ({max_iterations}) reached, aborting search")
             return None
         
         cur = q.popleft()
@@ -704,7 +695,6 @@ def path_finding(player, enemy, grid, gamestate):
                 node, move = prev[node]
                 path.append(move)
             path.reverse()
-            # print(f"[BFS] Found solution in {iterations} iterations, visited {len(visited)} states")
             return path
 
         for name, dr, dc in directions:
@@ -742,21 +732,19 @@ def path_finding(player, enemy, grid, gamestate):
                 steps = decode_steps(tcode)
 
                 for _ in range(steps):
-                    # Leaving current tile
                     stationary.pop((er, ec), None)
 
                     nr, nc = enemy_best_step(er, ec, tcode, np_row, np_col, next_gate_state)
                     if (nr, nc) == (er, ec):
-                        # No move; stay and mark stationary again
+                        # No move
                         stationary[(er, ec)] = idx
                         break
 
-                    # Collision with stationary enemy: kill the stationary one, move in
+                    # enemy kill
                     if (nr, nc) in stationary:
                         killed_idx = stationary.pop((nr, nc))
                         alive[killed_idx] = False
                     elif (nr, nc) in moved_positions:
-                        # Another enemy already moved here this turn -> block
                         stationary[(er, ec)] = idx
                         break
 
@@ -768,7 +756,7 @@ def path_finding(player, enemy, grid, gamestate):
             if any(alive[i] and positions[i] == (np_row, np_col) for i in range(len(positions))):
                 continue
 
-            # Build next enemy state (preserve order for determinism)
+            # Build next enemy state 
             next_enemy_state = tuple(
                 (types[i], positions[i][0], positions[i][1])
                 for i in range(len(positions))
@@ -796,6 +784,7 @@ def is_playable(player, enemy, grid, gamestate):
     return True
 
 def is_not_too_easy(player, enemy, grid, gamestate):
+    """Check that all cells are reachable"""
     directions = [('up', -1, 0), ('down', 1, 0), ('left', 0, -1), ('right', 0, 1)]
     visited = [[False] * COLS for _ in range(ROWS)]
     q = deque([(enemy.row, enemy.col, 0)])
@@ -913,7 +902,7 @@ def generate_game(grid, player, enemies, gamestate):
         if is_not_too_easy(player, enemies[0], grid, gamestate):
             break
 
-    gamestate.initpos = make_snapshot(player, enemies, gamestate)
+    gamestate.initpos = create_tuple(player, enemies, gamestate)
     gamestate.storedmove.clear()
     gamestate.storedmove.append(gamestate.initpos)
     gamestate.pending_snapshot = False
@@ -1022,9 +1011,6 @@ def generate_random_items(grid, player, enemies, gamestate, taken_positions):
 
 def solution_touches_key(path, player, grid, gamestate):
     """Check if the solution path visits at least one key tile.
-
-    We simulate only player moves using grid walls/gates. Enemy turns are irrelevant
-    for the key-visit condition because the BFS already validated legality.
     """
     if not gamestate.keys:
         return False
@@ -1053,7 +1039,6 @@ def solution_touches_key(path, player, grid, gamestate):
             return True
     return False
 
-# ===== Phase 2: Key, Gate, Trap Rendering =====
 
 def draw_key(surface, gamestate, dt):
     """Draw spinning key animation on all key tiles (Phase 2)."""

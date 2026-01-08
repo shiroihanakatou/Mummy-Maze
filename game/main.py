@@ -6,57 +6,19 @@ from pathlib import Path
 from variable import *
 from module import *
 from entity import Player, Enemy, Cell
-from screen.button import Undobutton, Restartbutton, Newgamebutton, Exitbutton, StartButton, Button
+from screen.button import Undobutton, Restartbutton, Newgamebutton, Exitbutton, StartButton, Button,TextButton
 from module.gamestate import Gamestate
 
-# Explicit imports for map I/O (single source of truth in module/module.py)
 from module.module import read_map_json, apply_map_to_grid
 
-# NEW: import module objects to sync runtime constants after changing difficulty / loading maps
 import variable as V
 import module.module as module_mod
 import entity.entity as entity_mod
 import module.gamestate as gamestate_mod
 
-# Snapshot helper (Phase 0/1)
-from module.module import make_snapshot
+from module.module import create_tuple
 
 
-class TextButton:
-    def __init__(
-        self,
-        text: str,
-        center_xy: tuple[int, int],
-        font: pygame.font.Font,
-        idle_color=(0, 0, 0),
-        hover_color=(255, 0, 0),
-        min_size=(280, 100),
-    ):
-        self.text = text
-        self.font = font
-        self.idle_color = idle_color
-        self.hover_color = hover_color
-
-        self._surf_idle = self.font.render(self.text, True, self.idle_color)
-        self._surf_hover = self.font.render(self.text, True, self.hover_color)
-
-        w = max(self._surf_idle.get_width(), self._surf_hover.get_width(), min_size[0])
-        h = max(self._surf_idle.get_height(), self._surf_hover.get_height(), min_size[1])
-        self.rect = pygame.Rect(0, 0, w, h)
-        self.rect.center = center_xy
-
-    def draw(self, surface: pygame.Surface, mouse_pos: tuple[int, int]):
-        hovered = self.rect.collidepoint(mouse_pos)
-        surf = self._surf_hover if hovered else self._surf_idle
-        surface.blit(surf, surf.get_rect(center=self.rect.center))
-        return hovered
-
-    def draw_at(self, surface, new_pos, mouse_pos):
-        self.rect.center = new_pos
-        self.draw(surface, mouse_pos)
-
-    def is_clicked(self, mouse_pos: tuple[int, int]):
-        return self.rect.collidepoint(mouse_pos)
 
 
 def run_game():
@@ -77,10 +39,10 @@ def run_game():
     except Exception as ex:
         print("[music] load failed:", ex)
 
-    # runtime objects (sẽ rebuild khi đổi size / load adventure map)
+    # init entities and gamestate
     grid = [[Cell(r, c) for c in range(COLS)] for r in range(ROWS)]
     player = Player()
-    enemies: list[Enemy] = []  # Phase 1
+    enemies: list[Enemy] = []  # enemies lists
 
     font = pygame.font.SysFont("Verdana", 60)
     menu_font = pygame.font.Font(str(ASSETS_DIR / "font" / "romeo.ttf"), 64)
@@ -98,7 +60,7 @@ def run_game():
     gamestate.level = 1
     progress_mgr = ProgressManager(ASSETS_DIR)
 
-    # Loading screen state
+    # Loading screen (ads)
     loading_state = {
         "active": False,
         "image": None,
@@ -108,7 +70,7 @@ def run_game():
         "start_time": 0.0
     }
 
-    # default classic: size hiện tại (variable default) + generate
+    # số lượng quái
     gamestate.enemy_count = 3 if ROWS >= 10 else (2 if ROWS >= 8 else 1)
     generate_game(grid, player, enemies, gamestate)
 
@@ -118,7 +80,7 @@ def run_game():
     modeSelect_bg = pygame.image.load(str(ASSETS_DIR / "screen" / "mode_bg.jpg")).convert_alpha()
     modeSelect_bg = pygame.transform.smoothscale(modeSelect_bg, (SCREEN_WIDTH + 10, SCREEN_HEIGHT + 60))
 
-    # Loading screen assets
+    # Loading screen images
     loading_images = [
         pygame.image.load(str(ASSETS_DIR / "images" / "beach.gif")).convert(),
         pygame.image.load(str(ASSETS_DIR / "images" / "findtreasure.jpg")).convert()
@@ -139,7 +101,7 @@ def run_game():
     hard_button   = TextButton("Hard",   (SCREEN_WIDTH // 2, 690), menu_font, idle_color=(0, 0, 0), hover_color=(255, 0, 0))
     back_button   = TextButton("Back",   (SCREEN_WIDTH // 4, 720), menu_font, idle_color=(0, 0, 0), hover_color=(255, 0, 0))
 
-    # Game Over overlay
+    # Game Over screen
     lose_bg = pygame.image.load(str(ASSETS_DIR / "images/menufront.png")).convert_alpha()
     lose_bg = pygame.transform.smoothscale(lose_bg, (SCREEN_WIDTH - 100, SCREEN_HEIGHT - 100))
 
@@ -153,12 +115,12 @@ def run_game():
     btn_back_map = TextButton("BACK", (234, 680), menu_font, idle_color=(50, 234, 0))
     btn_save_quit_map = TextButton("SAVE AND QUIT", (234, 750), menu_font, idle_color=(50, 234, 0))
 
-    # Auto-play state for solution replay
+    # Auto-play time setting
     auto_play = {
         "enabled": False,
         "solution_idx": 0,
         "move_timer": 0.0,
-        "move_delay": 0.5,  # seconds between moves
+        "move_delay": 0.5,  
     }
 
     img_options = pygame.image.load("game/assets/screen/OPTIONS_BUTTON.png").convert_alpha()
@@ -180,11 +142,8 @@ def run_game():
     menu_y = SCREEN_HEIGHT
 
     def _load_floor():
-        # floor6.jpg / floor8.jpg / floor10.jpg
-        try:
-            img = pygame.image.load(str(ASSETS_DIR / f"floor{ROWS}.jpg")).convert_alpha()
-        except Exception:
-            img = pygame.image.load(str(ASSETS_DIR / "floor10.jpg")).convert_alpha()
+        # floor6/8/10.jpg
+        img = pygame.image.load(str(ASSETS_DIR / f"floor{ROWS}.jpg")).convert_alpha()
         return pygame.transform.smoothscale(img, (int(COLS * CELL_SIZE), int(ROWS * CELL_SIZE)))
 
     background = _load_floor()
@@ -195,7 +154,7 @@ def run_game():
     backdrop_s = pygame.image.load(str(ASSETS_DIR / "backdrop.png")).convert_alpha()
     backdrop_s = pygame.transform.smoothscale(backdrop_s, (X, Y))
 
-    # ===== Next level overlay =====
+    # ===== Next level =====
     nextlevel_img = None
     for p in (
         ASSETS_DIR / "nextlevel.jpg",
@@ -218,7 +177,7 @@ def run_game():
         min_size=(540, 90),
     )
     
-    # Return to Menu button for auto-play completion
+    # Return to Menu button autoplay
     return_menu_button = TextButton(
         "Return to Menu",
         (OFFSET_X_1 + (SCREEN_WIDTH - OFFSET_X_1) // 2, 600),
@@ -247,17 +206,17 @@ def run_game():
         min_size=(540, 90),
     )
 
-    # Loading screen button (non-functional, just for display)
+    # Loading screen button
     loading_button = TextButton(
         "Please wait",
-        (0, 0),  # Will be repositioned dynamically
+        (0, 0),  
         menu_font,
-        idle_color=(0, 0, 0),
-        hover_color=(0, 0, 0),  # Same color since it's non-interactive
+        idle_color=(255, 255, 255),
+        hover_color=(255,255,255), 
         min_size=(300, 80),
     )
 
-    # ===== sync constants after changing ROWS/COLS =====
+    # ===== reset vaiable sau khi đổi mode =====
     def _sync_dynamic_vars():
         names = [
             "ROWS", "COLS", "CELL_SIZE",
@@ -278,7 +237,7 @@ def run_game():
 
         grid = [[Cell(r, c) for c in range(COLS)] for r in range(ROWS)]
         player = Player()
-        # Clear all old enemies and their states
+        # Clear enemies 
         enemies.clear()
         killed_uids.clear()
         collision_fx.clear()
@@ -296,7 +255,6 @@ def run_game():
         gamestate.mode = "classic"
         gamestate.state = "PLAYING"
 
-        # Phase 1: enemy count theo difficulty
         if size <= 6:
             gamestate.enemy_count = 1
         elif size <= 8:
@@ -338,7 +296,7 @@ def run_game():
 
         grid = [[Cell(r, c) for c in range(COLS)] for r in range(ROWS)]
         player = Player()
-        # Clear all old enemies and their states
+        # Clear quái
         enemies.clear()
         killed_uids.clear()
         collision_fx.clear()
@@ -363,11 +321,11 @@ def run_game():
             return None
         return chapter, level
 
-    # ===== Phase 1: enemy hooks + collision resolver =====
+    # ===== enemy fight =====
     # Rule: If an enemy moves into a tile occupied by another enemy that is standing still,
     # then the standing enemy dies. The moving enemy survives.
     killed_uids: set[int] = set()
-    collision_fx: list[dict] = []  # dust effects for enemy-enemy collision
+    collision_fx: list[dict] = []  # dust effects 
 
     def _ensure_enemy_hooks():
         """
@@ -406,7 +364,7 @@ def run_game():
                 # Check: same tile AND not moving AND no pending steps
                 if (other.row == mr and other.col == mc) and (not other.is_moving) and (not getattr(other, "pending_steps", [])):
                     killed_uids.add(other.uid)
-                    # Play a collision sound when an enemy kills another (avoid block.wav)
+                    # Play a collision sound when an enemy kills another
                     hit_snd = gamestate.sfx.get("mummyhowl")
                     if hit_snd:
                         try:
@@ -424,7 +382,6 @@ def run_game():
                     # print(f"[Collision] Enemy {other.uid} ({other.type}) killed by Enemy {mover.uid}")
                     break
 
-        # Ensure all enemies have the collision callback
         for e in enemies:
             if getattr(e, "on_step", None) is not on_enemy_step:
                 e.on_step = on_enemy_step
@@ -439,9 +396,8 @@ def run_game():
             if getattr(e, "pending_steps", []):
                 return False
         return True
-
-    # Turn order tracking
-    current_turn = "player"  # "player" or enemy index (0, 1, 2, ...)
+    
+    current_turn = "player"  
     enemy_turn_idx = 0
 
     # ===== MAIN LOOP =====
@@ -695,8 +651,8 @@ def run_game():
                                 gamestate.sfx["click"].play()
                             except: pass
                         undobutton.undo_move(e, player, enemies, gamestate, grid)
-                        killed_uids.clear()  # Respawn all dead enemies on undo
-                        collision_fx.clear()  # Clear collision effects
+                        killed_uids.clear()  # Hồi sinh quái khi undo
+                        collision_fx.clear()
                     # Check restart button
                     elif restartbutton.is_clicked(e.pos):
                         if gamestate.sfx.get("click") is not None:
@@ -704,8 +660,8 @@ def run_game():
                                 gamestate.sfx["click"].play()
                             except: pass
                         restartbutton.restart_game(e, player, enemies, gamestate, grid)
-                        killed_uids.clear()  # Respawn all dead enemies
-                        collision_fx.clear()  # Clear collision effects
+                        killed_uids.clear()  # Hồi sinh quái khi restart
+                        collision_fx.clear()  
                         current_turn = "player"
                         enemy_turn_idx = 0
                         gamestate.state = "PLAYING"
@@ -746,7 +702,7 @@ def run_game():
             elif gamestate.state == "LOSE_MENU":
                 if e.type == pygame.MOUSEBUTTONDOWN:
                     dy = menu_y - target_y
-                    # Create adjusted mouse position for buttons drawn with offset
+                   
                     adjusted_mouse_pos = (mouse_pos[0], mouse_pos[1] - dy)
                     
                     if btn_try_again.is_clicked(adjusted_mouse_pos):
@@ -786,7 +742,7 @@ def run_game():
                         for en in enemies:
                             en.update(0)
                     elif btn_abandon_hope.is_clicked(adjusted_mouse_pos):
-                        # Available in both modes; functional in both
+                        #autoplay mode
                         if gamestate.sfx.get("click") is not None:
                             try:
                                 gamestate.sfx["click"].play()
@@ -794,8 +750,8 @@ def run_game():
                         if gamestate.solution:
                             # Reset to initial position
                             if gamestate.initpos:
-                                from module.module import apply_snapshot
-                                apply_snapshot(gamestate.initpos, player, enemies, grid, gamestate)
+                                from module.module import apply_tuple
+                                apply_tuple(gamestate.initpos, player, enemies, grid, gamestate)
                                 # print(f"[AutoPlay] Starting with {len(gamestate.solution)} moves")
                             # Start auto-play
                             auto_play["enabled"] = True
@@ -852,13 +808,12 @@ def run_game():
                         pygame.quit()
                         sys.exit()
 
-        # ===== update actors =====
+        # ===== update animation =====
         if gamestate.state == "PLAYING" and (not gamestate.gameover):
             _ensure_enemy_hooks()
 
-            # If a trap death requested an immediate snapshot, do it now
             if getattr(gamestate, "_force_snapshot_now", False):
-                gamestate.storedmove.append(make_snapshot(player, enemies, gamestate))
+                gamestate.storedmove.append(create_tuple(player, enemies, gamestate))
                 try:
                     delattr(gamestate, "_force_snapshot_now")
                 except Exception:
@@ -866,24 +821,22 @@ def run_game():
 
             player.update(dt)
             for en in enemies:
-                # Skip updating dead enemies
                 if en.uid not in killed_uids:
                     en.update(dt)
 
-            # Handle enemy turns sequentially
+            # Handle enemy turns theo lượt
             if current_turn != "player" and _actors_idle():
-                # All previous actors idle, execute current enemy turn
                 if current_turn < len(enemies):
                     en = enemies[current_turn]
                     en.move(player, grid)
                     # Check collision after this enemy moves
                     if gamestate.state != "DEATH_ANIM":
                         losing_check(None, None, player, enemies, gamestate)
-                    # Remove dead enemies immediately so their anim stops
+                    # Xóa quái khi bị giết
                     if killed_uids:
                         enemies[:] = [e for e in enemies if e.uid not in killed_uids]
                         killed_uids.clear()
-                        # If we removed the current slot or beyond, clamp turn index
+                        
                         if current_turn >= len(enemies):
                             current_turn = len(enemies)
                     # Move to next enemy or back to player
@@ -898,7 +851,7 @@ def run_game():
                 enemies[:] = [en for en in enemies if en.uid not in killed_uids]
                 killed_uids.clear()
 
-            # Update enemy-enemy collision dust effects
+            #dust effects
             if gamestate.dust_frames:
                 alive_fx = []
                 for fx in collision_fx:
@@ -914,7 +867,7 @@ def run_game():
 
             # append snapshot when turn fully settled
             if getattr(gamestate, "pending_snapshot", False) and _actors_idle():
-                gamestate.storedmove.append(make_snapshot(player, enemies, gamestate))
+                gamestate.storedmove.append(create_tuple(player, enemies, gamestate))
                 gamestate.pending_snapshot = False
 
         elif gamestate.state == "DEATH_ANIM":
@@ -935,7 +888,7 @@ def run_game():
 
             # Handle enemy turns sequentially
             if current_turn != "player" and _actors_idle():
-                # All previous actors idle, execute current enemy turn
+            
                 if current_turn < len(enemies):
                     en = enemies[current_turn]
                     if en.uid not in killed_uids:
@@ -951,11 +904,10 @@ def run_game():
                             current_turn = len(enemies)
                     current_turn += 1
                 else:
-                    # All enemies done, wait for all animations to finish then back to player
                     if _actors_idle():
                         current_turn = "player"
             
-            # AUTO-PLAY: Execute next move from solution only when it's player turn and all idle
+            # AUTO-PLAY
             if auto_play["enabled"] and current_turn == "player" and _actors_idle():
                 auto_play["move_timer"] += dt
                 if auto_play["move_timer"] >= auto_play["move_delay"]:
@@ -994,7 +946,7 @@ def run_game():
                                     current_turn = 0
                                     enemy_turn_idx = 0
                                 else:
-                                    # Death during autoplay, stop
+    
                                     auto_play["enabled"] = False
                                     return
                         auto_play["solution_idx"] += 1
@@ -1004,7 +956,7 @@ def run_game():
                         auto_play["enabled"] = False
                         # Reset to a fresh state after autoplay
                         if gamestate.initpos:
-                            apply_snapshot(gamestate.initpos, player, enemies, grid, gamestate)
+                            apply_tuple(gamestate.initpos, player, enemies, grid, gamestate)
                         killed_uids.clear()
                         collision_fx.clear()
                         current_turn = "player"
@@ -1012,12 +964,11 @@ def run_game():
                         gamestate.gameover = False
                         gamestate.state = "AUTOPLAY_COMPLETE"
 
-            # apply enemy-vs-enemy kills after updates
             if killed_uids:
                 enemies[:] = [en for en in enemies if en.uid not in killed_uids]
                 killed_uids.clear()
 
-            # Update enemy-enemy collision dust effects
+            #dust effects
             if gamestate.dust_frames:
                 alive_fx = []
                 for fx in collision_fx:
@@ -1038,7 +989,7 @@ def run_game():
                 auto_play["enabled"] = False
                 # Fresh reset after autoplay goal
                 if gamestate.initpos:
-                    apply_snapshot(gamestate.initpos, player, enemies, grid, gamestate)
+                    apply_tuple(gamestate.initpos, player, enemies, grid, gamestate)
                 killed_uids.clear()
                 collision_fx.clear()
                 current_turn = "player"
@@ -1046,7 +997,7 @@ def run_game():
                 gamestate.gameover = False
                 # print("[AutoPlay] Goal reached during auto-play!")
 
-        # Win detection
+        # Win check 
         if gamestate.state == "PLAYING" and (not gamestate.gameover):
             if player.row == gamestate.goal_row and player.col == gamestate.goal_col:
                 gamestate.gameover = True
@@ -1131,9 +1082,6 @@ def run_game():
             death_active = gamestate.state == "DEATH_ANIM" and getattr(gamestate, "death_state", None)
             death_cause = gamestate.death_state.get("cause") if death_active else None
             death_pos = (gamestate.death_state.get("row"), gamestate.death_state.get("col")) if death_active else (-1, -1)
-
-            # Top-down, row-based rendering: walls (DOWN/LEFT) have priority
-            # Build enemy lookup for quick access
             pos_to_enemy = {}
             for en in enemies:
                 if en.uid not in killed_uids:
@@ -1142,7 +1090,7 @@ def run_game():
             # Track which gates have been drawn (to avoid duplicate)
             drawn_gates = set()
             
-            # Draw row by row from top to bottom
+            # Draw theo từng ô tránh đè nhau
             for row in grid:
                 for cell in row:
                     # 1. Draw floor/background first
@@ -1229,7 +1177,6 @@ def run_game():
                                 surface.blit(frame, (gx, gy))
                             except: pass
             
-            # Remaining gates pass removed; gates are drawn per cell with walls
             
             # Update gate animations
             if gamestate.gate_frames:
@@ -1264,24 +1211,16 @@ def run_game():
                 current_time = pygame.time.get_ticks() / 1000.0
                 elapsed_time = current_time - loading_state["start_time"]
                 
-                # Randomly increment progress every 0.05-0.15 seconds
-                if loading_state["timer"] >= random.uniform(0.05, 0.15):
-                    loading_state["timer"] = 0.0
-                    if loading_state["progress"] < 0.95:  # Don't fill completely until generation done
-                        loading_state["progress"] += random.uniform(0.05, 0.15)
-                
                 # Start actual generation after a brief visual delay
-                if not loading_state["generating"] and loading_state["progress"] > 0.1:
+                if not loading_state["generating"] :
                     loading_state["generating"] = True
                     # Perform the actual generation
                     newgamebutton.newgame_game(None, grid, player, enemies, gamestate)
                     killed_uids.clear()
                     collision_fx.clear()
-                    # Mark as complete
-                    loading_state["progress"] = 1.0
                 
                 # Clear loading screen only after 2 seconds minimum AND generation complete
-                if loading_state["progress"] >= 1.0 and loading_state["generating"] and elapsed_time >= 2.0:
+                if loading_state["generating"] and elapsed_time >= 2.0:
                     loading_state["active"] = False
                     loading_state["generating"] = False
 
