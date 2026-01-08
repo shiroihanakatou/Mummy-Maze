@@ -23,6 +23,15 @@ DARKGREEN=(0,100,0)
 SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 800
 
+# UI animation constants (for lose menu slide)
+menu_y = SCREEN_HEIGHT  # start off-screen
+target_y = 100          # final Y position
+slide_speed = 15        # slide speed
+
+# Audio volume constants
+BASE_MUSIC_VOLUME = 0.1   # Background music volume (0.0 to 1.0)
+BASE_SOUND_VOLUME = 1.5   # Sound effects volume (0.0 to 2.0+)
+
 # ===== Difficulty -> Board size =====
 DIFFICULTY_TO_SIZE = {
     "easy": 6,
@@ -50,7 +59,6 @@ OFFSET_Y_1=70
 
 
 
-
 OFFSET_X = 0.0
 OFFSET_Y = 0.0
 wall_gap = 0.0
@@ -71,7 +79,7 @@ def apply_grid_size(size: int):
     maze_width = COLS * CELL_SIZE
     maze_height = ROWS * CELL_SIZE
 
-    stair_padding = CELL_SIZE // 6
+    stair_padding = CELL_SIZE // 8
 
     OFFSET_X = OFFSET_X_1 + 69 / org_backdrop_w * X
     OFFSET_Y = OFFSET_Y_1 + 80 / org_backdrop_h * Y

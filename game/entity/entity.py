@@ -1,11 +1,11 @@
 import pygame, sys, random
 from pygame.locals import *
 from variable import *
-from module import new_enemy_position,add_sprite_frames
+from module import new_enemy_position, add_sprite_frames
+
 
 class Cell:
     def __init__(self, row, col):
-        # Một ô sẽ có các thuộc tính: vị trí và các bước tường
         self.row = row
         self.col = col
         self.up = 0
@@ -14,33 +14,41 @@ class Cell:
         self.right = 0
         self.sprite_sheet = pygame.image.load("game/assets/walls6.png").convert_alpha()
 
-    def draw(self, surface,grid):
-        x =OFFSET_X+ self.col * CELL_SIZE
-        y = OFFSET_Y+self.row * CELL_SIZE
+    def _scale(self, frame):
+        factor = CELL_SIZE / 60
+        if hasattr(pygame.transform, "smoothscale_by"):
+            return pygame.transform.smoothscale_by(frame, factor)
+        w, h = frame.get_size()
+        return pygame.transform.smoothscale(frame, (int(w * factor), int(h * factor)))
+
+    def draw(self, surface, grid):
+        x = OFFSET_X + self.col * CELL_SIZE
+        y = OFFSET_Y + self.row * CELL_SIZE
+
         wall_location = {
-            "down" : (12, 0, 72, 18),
-            "left_end" : (0, 0, 12, 78),
-            "left" : (84, 0, 12, 78)
+            "down": (12, 0, 72, 18),
+            "left_end": (0, 0, 12, 78),
+            "left": (84, 0, 12, 78),
         }
-        # Vẽ các trước ô rect màu xám,nếu có tường thì line trắng
+
         if self.left:
-            if self.row<ROWS-1 and grid[self.row+1][self.col].left==0:
-                frame = self.sprite_sheet.subsurface(wall_location['left_end'])
+            if self.row < ROWS - 1 and grid[self.row + 1][self.col].left == 0:
+                frame = self.sprite_sheet.subsurface(wall_location["left_end"])
             else:
-                frame = self.sprite_sheet.subsurface(wall_location['left'])
-            frame=pygame.transform.smoothscale_by(frame,CELL_SIZE/60)
-            surface.blit(frame, (x, y-wall_gap))
-        if self.down:
-            frame = self.sprite_sheet.subsurface(wall_location['down'])
-            frame=pygame.transform.smoothscale_by(frame,CELL_SIZE/60)
-            surface.blit(frame, (x, y + CELL_SIZE - wall_gap))
+                frame = self.sprite_sheet.subsurface(wall_location["left"])
+            surface.blit(self._scale(frame), (x, y - wall_gap))
+
+        # IMPORTANT: down==1 is wall. down==2/3 is gate (don't draw wall for gates)
+        if self.down == 1:
+            frame = self.sprite_sheet.subsurface(wall_location["down"])
+            surface.blit(self._scale(frame), (x, y + CELL_SIZE - wall_gap))
+
 
 class Player:
     def __init__(self):
         self.row = 0
         self.col = 0
         self.direction = "down"
-        self.color = BLUE
         self.type = "explorer"
 
         self.sprite_sheet = pygame.image.load(f"game/assets/{self.type}6.png").convert_alpha()
@@ -53,7 +61,6 @@ class Player:
 
         self.anim_idx = 0
         self.anim_timer = 0.0
-        self.anim_speed = 0.5  # default, sẽ override khi play_animation
 
         self.animation_container = []
         self.anim_sequences = {
@@ -64,37 +71,33 @@ class Player:
         self.inactive_timer = 0.0
         self.idle_delay = random.uniform(8, 12)
 
+        # render offset (trượt)
         self.render_dx = 0.0
         self.render_dy = 0.0
-
         self.is_moving = False
 
-    def play_animation(self, name, speed=None, loop=False, reset=True):
+        # tween controller (FIX: nội suy về 0)
+        self._move_t = 0.0
+        self._move_T = 0.0
+        self._move_start_dx = 0.0
+        self._move_start_dy = 0.0
+
+    def play_animation(self, name, speed, loop=False, reset=True):
         if reset:
-            self.animation_container = []
-        if name not in self.anim_sequences:
-            name = "move"
-        self.animation_container.append(
-            {"name": name, "speed": self.anim_speed if speed is None else speed, "loop": loop}
-        )
+            self.animation_container.clear()
+
+        self.animation_container.append({"name": name, "speed": speed, "loop": loop})
         self.anim_idx = 0
         self.anim_timer = 0.0
 
-        # lock nếu là move one-shot
         if name == "move" and not loop:
             self.is_moving = True
-
-    def _dir_vec(self):
-        if self.direction == "up":
-            return (0, -1)
-        if self.direction == "down":
-            return (0, 1)
-        if self.direction == "left":
-            return (-1, 0)
-        return (1, 0)  # right
+            self._move_t = 0.0
+            self._move_T = speed * len(self.anim_sequences["move"])
+            self._move_start_dx = self.render_dx
+            self._move_start_dy = self.render_dy
 
     def move(self, key, grid):
-        # đang trượt thì không nhận move mới
         if self.is_moving:
             return False
 
@@ -107,41 +110,44 @@ class Player:
             self.anim_timer = 0.0
 
         cell = grid[self.row][self.col]
+        old_row, old_col = self.row, self.col
         moving = False
 
-        old_row, old_col = self.row, self.col
-
-        if (key == K_UP or key == K_w) and not cell.up and self.row > 0:
+        # gate logic:
+        # - đi xuống: chặn nếu cell.down in (1 wall, 2 gate đóng)
+        # - đi lên: xem down của cell phía trên
+        if (key == K_UP or key == K_w) and self.row > 0 and grid[self.row - 1][self.col].down not in (1, 2):
             self.row -= 1
             self.direction = "up"
             moving = True
-        elif (key == K_DOWN or key == K_s) and not cell.down and self.row < ROWS - 1:
+        elif (key == K_DOWN or key == K_s) and self.row < ROWS - 1 and cell.down not in (1, 2):
             self.row += 1
             self.direction = "down"
             moving = True
-        elif (key == K_LEFT or key == K_a) and not cell.left and self.col > 0:
+        elif (key == K_LEFT or key == K_a) and (not cell.left) and self.col > 0:
             self.col -= 1
             self.direction = "left"
             moving = True
-        elif (key == K_RIGHT or key == K_d) and not cell.right and self.col < COLS - 1:
+        elif (key == K_RIGHT or key == K_d) and (not cell.right) and self.col < COLS - 1:
             self.col += 1
             self.direction = "right"
             moving = True
 
         if moving:
-            # render offset: vẽ ở ô mới nhưng bị kéo ngược về ô cũ
+            # base position là ô MỚI, offset kéo ngược về ô CŨ
             dc = old_col - self.col
             dr = old_row - self.row
             self.render_dx = dc * CELL_SIZE
             self.render_dy = dr * CELL_SIZE
 
-            # move animation kéo đúng 2 giây: 5 frame => mỗi frame 0.4s
+            # 5 frame, tổng ~0.5s giống code cũ
             self.play_animation("move", speed=0.5 / 5.0, loop=False, reset=True)
 
         return moving
 
     def update(self, dt):
-        if not self.animation_container and (not self.is_moving):
+        # idle trigger
+        if (not self.is_moving) and (not self.animation_container):
             self.inactive_timer += dt
             if self.inactive_timer >= self.idle_delay:
                 self.play_animation("idle", speed=0.14, loop=True, reset=True)
@@ -152,18 +158,11 @@ class Player:
         cur = self.animation_container[0]
         seq = self.anim_sequences[cur["name"]]
 
+        # update animation frames
         self.anim_timer += dt
         if self.anim_timer >= cur["speed"]:
             self.anim_timer -= cur["speed"]
             self.anim_idx += 1
-
-            # ===== NEW: mỗi frame move thì bớt offset đúng CELL_SIZE/len(seq) =====
-            if cur["name"] == "move":
-                step = CELL_SIZE / max(1, len(seq))
-                vx, vy = self._dir_vec()
-                # offset đang kéo ngược, nên giảm về 0 theo hướng forward
-                self.render_dx += vx * step
-                self.render_dy += vy * step
 
             if self.anim_idx >= len(seq):
                 if cur["loop"]:
@@ -173,11 +172,21 @@ class Player:
                     self.anim_idx = 0
                     self.anim_timer = 0.0
 
-                    # kết thúc move: snap offset về 0 và unlock input
-                    if cur["name"] == "move":
-                        self.render_dx = 0.0
-                        self.render_dy = 0.0
-                        self.is_moving = False
+        # FIX: tween offset về 0 theo thời gian, không phụ thuộc direction
+        if self.is_moving and self._move_T > 0:
+            self._move_t += dt
+            a = self._move_t / self._move_T
+            if a >= 1.0:
+                a = 1.0
+            self.render_dx = self._move_start_dx * (1.0 - a)
+            self.render_dy = self._move_start_dy * (1.0 - a)
+
+            if a >= 1.0:
+                self.render_dx = 0.0
+                self.render_dy = 0.0
+                self.is_moving = False
+                self._move_t = 0.0
+                self._move_T = 0.0
 
     def _scale_frame(self, frame):
         factor = CELL_SIZE / 60
@@ -189,6 +198,7 @@ class Player:
     def draw(self, surface):
         x = self.col * CELL_SIZE + CELL_SIZE // 2 + OFFSET_X + int(self.render_dx)
         y = self.row * CELL_SIZE + CELL_SIZE // 2 + OFFSET_Y + int(self.render_dy)
+
         if self.animation_container:
             name = self.animation_container[0]["name"]
             seq = self.anim_sequences[name]
@@ -199,15 +209,19 @@ class Player:
         frame = self._scale_frame(self.frames[self.direction][frame_idx])
         rect = frame.get_rect(center=(x, y))
         surface.blit(frame, rect)
-        
-        
-        
+
+
 class Enemy:
+    _UID = 0
+
     def __init__(self):
+        Enemy._UID += 1
+        self.uid = Enemy._UID
+        self.on_step = None
+
         self.row = random.randint(0, ROWS - 1)
         self.col = random.randint(0, COLS - 1)
         self.direction = "down"
-        self.color = RED
         self.type = random.choice(["red_mummy", "white_mummy", "red_scorpion"])
 
         self.sprite_sheet = pygame.image.load(f"game/assets/{self.type}6.png").convert_alpha()
@@ -220,41 +234,45 @@ class Enemy:
 
         self.anim_idx = 0
         self.anim_timer = 0.0
-        self.anim_speed = 2  # default fallback
 
         self.animation_container = []
         self.anim_sequences = {"move": [0, 1, 2, 3, 4]}
 
-        # smooth-step render offset (kéo ngược về ô cũ)
         self.render_dx = 0.0
         self.render_dy = 0.0
-
-        # chain move control
         self.is_moving = False
-        self.pending_steps = []              # queue các bước (mỗi bước = 1 ô)
-        self.base_move_frame_time = 0.12     # thời gian mỗi frame, 5 frame ~ 0.6s / 1 ô
 
-    def play_animation(self, name, speed=None, loop=False, reset=True):
-        if reset:
-            self.animation_container = []
-        if name not in self.anim_sequences:
-            name = "move"
-        self.animation_container.append(
-            {"name": name, "speed": self.anim_speed if speed is None else speed, "loop": loop}
-        )
+        self.pending_steps = []
+        self.base_move_frame_time = 0.12
+
+        # tween controller
+        self._move_t = 0.0
+        self._move_T = 0.0
+        self._move_start_dx = 0.0
+        self._move_start_dy = 0.0
+
+    def set_type(self, new_type: str):
+        if self.type == new_type:
+            return
+        self.type = new_type
+        add_sprite_frames(self)
         self.anim_idx = 0
         self.anim_timer = 0.0
+
+    def play_animation(self, name, speed, loop=False, reset=True):
+        if reset:
+            self.animation_container.clear()
+
+        self.animation_container.append({"name": name, "speed": speed, "loop": loop})
+        self.anim_idx = 0
+        self.anim_timer = 0.0
+
         if name == "move" and not loop:
             self.is_moving = True
-
-    def _dir_vec(self):
-        if self.direction == "up":
-            return (0, -1)
-        if self.direction == "down":
-            return (0, 1)
-        if self.direction == "left":
-            return (-1, 0)
-        return (1, 0)
+            self._move_t = 0.0
+            self._move_T = speed * len(self.anim_sequences["move"])
+            self._move_start_dx = self.render_dx
+            self._move_start_dy = self.render_dy
 
     def _start_next_step(self):
         if not self.pending_steps:
@@ -264,34 +282,30 @@ class Enemy:
         step = self.pending_steps.pop(0)
         dr, dc, ndir = step["dr"], step["dc"], step["dir"]
 
-        # commit logic position 1 ô
         self.row += dr
         self.col += dc
         self.direction = ndir
 
-        # kéo ngược để vẽ trượt từ ô cũ sang ô mới
+        if callable(self.on_step):
+            self.on_step(self)
+
+        # base position là ô MỚI, offset kéo ngược về ô CŨ
         self.render_dx = (-dc) * CELL_SIZE
         self.render_dy = (-dr) * CELL_SIZE
 
-        # chạy 1 lượt animation move cho đúng 1 ô
         self.play_animation("move", speed=self.base_move_frame_time, loop=False, reset=True)
-        self.is_moving = True
 
     def move(self, player, grid):
-        # đang chain thì không nhận lệnh mới
         if self.is_moving or self.pending_steps:
-            return False
+            return 0
 
-        steps = 2
-        if self.type == "red_scorpion":
-            steps = 1
+        steps = 2 if self.type != "red_scorpion" else 1
 
         temp_r, temp_c = self.row, self.col
         planned = []
 
         for _ in range(steps):
             nr, nc = new_enemy_position(temp_r, temp_c, player.row, player.col, grid, self.type)
-
             if nr == temp_r and nc == temp_c:
                 break
 
@@ -310,7 +324,14 @@ class Enemy:
             planned.append({"dr": dr, "dc": dc, "dir": ndir})
             temp_r, temp_c = nr, nc
 
+        # Face player even if not moving
         if not planned:
+            dr = player.row - self.row
+            dc = player.col - self.col
+            if abs(dr) > abs(dc):
+                self.direction = "down" if dr > 0 else "up"
+            elif dc != 0:
+                self.direction = "right" if dc > 0 else "left"
             return 0
 
         self.pending_steps = planned
@@ -324,16 +345,11 @@ class Enemy:
         cur = self.animation_container[0]
         seq = self.anim_sequences[cur["name"]]
 
+        # update frames
         self.anim_timer += dt
         if self.anim_timer >= cur["speed"]:
             self.anim_timer -= cur["speed"]
             self.anim_idx += 1
-
-            if cur["name"] == "move":
-                step = CELL_SIZE / max(1, len(seq))
-                vx, vy = self._dir_vec()
-                self.render_dx += vx * step
-                self.render_dy += vy * step
 
             if self.anim_idx >= len(seq):
                 if cur["loop"]:
@@ -343,15 +359,25 @@ class Enemy:
                     self.anim_idx = 0
                     self.anim_timer = 0.0
 
-                    if cur["name"] == "move":
-                        self.render_dx = 0.0
-                        self.render_dy = 0.0
+        # tween về 0
+        if self.is_moving and self._move_T > 0:
+            self._move_t += dt
+            a = self._move_t / self._move_T
+            if a >= 1.0:
+                a = 1.0
+            self.render_dx = self._move_start_dx * (1.0 - a)
+            self.render_dy = self._move_start_dy * (1.0 - a)
 
-                        # chain: tự động chạy bước tiếp theo nếu còn
-                        if self.pending_steps:
-                            self._start_next_step()
-                        else:
-                            self.is_moving = False
+            if a >= 1.0:
+                self.render_dx = 0.0
+                self.render_dy = 0.0
+                self.is_moving = False
+                self._move_t = 0.0
+                self._move_T = 0.0
+
+                # chain bước tiếp theo sau khi kết thúc 1 ô
+                if self.pending_steps:
+                    self._start_next_step()
 
     def _scale_frame(self, frame):
         factor = CELL_SIZE / 60
@@ -365,8 +391,7 @@ class Enemy:
         y = self.row * CELL_SIZE + CELL_SIZE // 2 + OFFSET_Y + int(self.render_dy)
 
         if self.animation_container:
-            name = self.animation_container[0]["name"]
-            seq = self.anim_sequences[name]
+            seq = self.anim_sequences[self.animation_container[0]["name"]]
             frame_idx = seq[self.anim_idx]
         else:
             frame_idx = 0
