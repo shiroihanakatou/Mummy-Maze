@@ -1,24 +1,69 @@
 import pygame, sys, random
 import os, json
+import time
+from typing import Tuple
 from pygame.locals import *
 from pathlib import Path
 
 from variable import *
 from module import *
 from entity import Player, Enemy, Cell
-from screen.button import Undobutton, Restartbutton, Newgamebutton, Exitbutton, StartButton, Button,TextButton
-from module.gamestate import Gamestate
+from screen.button import Undobutton, Restartbutton, Newgamebutton, Exitbutton, StartButton, Button
+from screen.login import LoginScreen, LeaderboardScreen, RegisterScreen, GuestLoadScreen, SaveDialog
+from module.gamestate import Gamestate, load_frames_with_mask
+from saveload import *
 
+# Explicit imports for map I/O (single source of truth in module/module.py)
 from module.module import read_map_json, apply_map_to_grid
 
+# NEW: import module objects to sync runtime constants after changing difficulty / loading maps
 import variable as V
 import module.module as module_mod
 import entity.entity as entity_mod
 import module.gamestate as gamestate_mod
 
-from module.module import create_tuple
+# Snapshot helper (Phase 0/1)
+from module.module import make_snapshot
 
 
+class TextButton:
+    def __init__(
+        self,
+        text: str,
+        center_xy: Tuple[int, int],
+        font: pygame.font.Font,
+        idle_color=(0, 0, 0),
+        hover_color=(255, 0, 0),
+        min_size=(280, 100),
+    ):
+        self.text = text
+        self.font = font
+        self.idle_color = idle_color
+        self.hover_color = hover_color
+
+        self._surf_idle = self.font.render(self.text, True, self.idle_color)
+        self._surf_hover = self.font.render(self.text, True, self.hover_color)
+
+        w = max(self._surf_idle.get_width(), self._surf_hover.get_width(), min_size[0])
+        h = max(self._surf_idle.get_height(), self._surf_hover.get_height(), min_size[1])
+        # Click area is 80% of visual size
+        click_w = int(w * 0.8)
+        click_h = int(h * 0.8)
+        self.rect = pygame.Rect(0, 0, click_w, click_h)
+        self.rect.center = center_xy
+
+    def draw(self, surface: pygame.Surface, mouse_pos: tuple[int, int]):
+        hovered = self.rect.collidepoint(mouse_pos)
+        surf = self._surf_hover if hovered else self._surf_idle
+        surface.blit(surf, surf.get_rect(center=self.rect.center))
+        return hovered
+
+    def draw_at(self, surface, new_pos, mouse_pos):
+        self.rect.center = new_pos
+        self.draw(surface, mouse_pos)
+
+    def is_clicked(self, mouse_pos: tuple[int, int]):
+        return self.rect.collidepoint(mouse_pos)
 
 
 def run_game():
@@ -39,10 +84,10 @@ def run_game():
     except Exception as ex:
         print("[music] load failed:", ex)
 
-    # init entities and gamestate
+    # runtime objects (sẽ rebuild khi đổi size / load adventure map)
     grid = [[Cell(r, c) for c in range(COLS)] for r in range(ROWS)]
     player = Player()
-    enemies: list[Enemy] = []  # enemies lists
+    enemies: list[Enemy] = []  # Phase 1
 
     font = pygame.font.SysFont("Verdana", 60)
     menu_font = pygame.font.Font(str(ASSETS_DIR / "font" / "romeo.ttf"), 64)
@@ -60,7 +105,46 @@ def run_game():
     gamestate.level = 1
     progress_mgr = ProgressManager(ASSETS_DIR)
 
-    # Loading screen (ads)
+    # User session
+    user_session = {
+        "username": None,
+        "password": None,
+        "is_guest": False,
+        "score": 0,
+        "level_start_time": None,
+        "level_start_moves": 0
+    }
+    
+    # Track state transitions for level initialization
+    previous_state = None
+    
+    # State hierarchy tree for navigation
+    state_tree = {
+        "LOGIN": None,
+        "REGISTER": "LOGIN",
+        "LEADERBOARD": "LOGIN",
+        "GUEST_LOAD": "LOGIN",
+        "SELECTION": None,
+        "PLAYING": "SELECTION",
+    }
+
+    # Save dialog - new class-based implementation
+    save_dialog_screen = SaveDialog()
+    
+    # Old save dialog state (keeping for backward compatibility during transition)
+    save_dialog = {
+        "active": False,
+        "dialog_type": "save_before_exit",
+        "mode_to_save": None,
+        "pending_state": None,
+        "profiles": [],
+        "selected_profile": None,
+        "message": "",
+        "is_guest": False,
+        "phase": "confirm",
+    }
+
+    # Loading screen state
     loading_state = {
         "active": False,
         "image": None,
@@ -70,27 +154,61 @@ def run_game():
         "start_time": 0.0
     }
 
-    # số lượng quái
+    # default classic: size hiện tại (variable default) + generate
     gamestate.enemy_count = 3 if ROWS >= 10 else (2 if ROWS >= 8 else 1)
     generate_game(grid, player, enemies, gamestate)
 
-    start_bg = pygame.image.load(str(ASSETS_DIR / "screen" / "bg_start_1.jpg")).convert_alpha()
+    start_bg = pygame.image.load(str(ASSETS_DIR / "images" / "bg_start_1.jpg")).convert_alpha()
     start_bg = pygame.transform.smoothscale(start_bg, (SCREEN_WIDTH + 10, SCREEN_HEIGHT + 60))
 
-    modeSelect_bg = pygame.image.load(str(ASSETS_DIR / "screen" / "mode_bg.jpg")).convert_alpha()
+    modeSelect_bg = pygame.image.load(str(ASSETS_DIR / "images" / "mode_bg.jpg")).convert_alpha()
     modeSelect_bg = pygame.transform.smoothscale(modeSelect_bg, (SCREEN_WIDTH + 10, SCREEN_HEIGHT + 60))
 
-    # Loading screen images
+    # Loading screen assets
     loading_images = [
         pygame.image.load(str(ASSETS_DIR / "images" / "beach.gif")).convert(),
         pygame.image.load(str(ASSETS_DIR / "images" / "findtreasure.jpg")).convert()
     ]
 
+    # Score font (digits 0-9 in one row)
+    score_font_sheet = pygame.image.load(str(ASSETS_DIR / "images" / "scorefont.png")).convert_alpha()
+    digit_w = score_font_sheet.get_width() // 10
+    digit_h = score_font_sheet.get_height()
+    score_digits = [score_font_sheet.subsurface(pygame.Rect(i * digit_w, 0, digit_w, digit_h)).copy() for i in range(10)]
+
+    def render_score(surface, value: int, center_pos: tuple[int, int], scale: float = 1.0):
+        """Render numeric score using sprite font."""
+        digits = list(str(max(0, value)))
+        frames = [score_digits[int(d)] for d in digits]
+        w = int(digit_w * scale)
+        h = int(digit_h * scale)
+        total_w = len(frames) * w
+        start_x = center_pos[0] - total_w // 2
+        y = center_pos[1] - h // 2
+        for i, frame in enumerate(frames):
+            surf = pygame.transform.smoothscale(frame, (w, h)) if scale != 1.0 else frame
+            surface.blit(surf, (start_x + i * w, y))
+
+    # Save dialog assets
+    dialog_bg = pygame.image.load(str(ASSETS_DIR / "images" / "dialog.gif")).convert_alpha()
+    dialog_button = pygame.image.load(str(ASSETS_DIR / "images" / "dbutton.jpg")).convert_alpha()
+    
+    # Scale dialog to fit screen nicely
+    dialog_size = min(400, SCREEN_WIDTH // 3)
+    dialog_bg = pygame.transform.smoothscale(dialog_bg, (dialog_size, dialog_size))
+    
+    # Dialog buttons (yes/no)
+    button_width = int(dialog_size * 0.8)
+    button_height = int(dialog_size * 0.15)
+    dialog_button = pygame.transform.smoothscale(dialog_button, (button_width, button_height))
+
     # Selection screen buttons
     classic_button = TextButton("CLASSIC MODE", (465, 492), menu_font, idle_color=(0, 0, 0), hover_color=(255, 0, 0))
     tutorial_button = TextButton("TUTORIAL", (835, 492), menu_font, idle_color=(0, 0, 0), hover_color=(255, 0, 0))
     adventure_button = TextButton("ADVENTURE", (465, 605), menu_font, idle_color=(0, 0, 0), hover_color=(255, 0, 0))
-    quit_button = TextButton("QUIT GAME", (835, 605), menu_font, idle_color=(0, 0, 0), hover_color=(255, 0, 0))
+    quit_button = TextButton("OPTIONS", (835, 605), menu_font, idle_color=(0, 0, 0), hover_color=(255, 0, 0))
+    leaderboard_button = TextButton("LEADERBOARD", (650, 720), menu_font, idle_color=(0, 0, 0), hover_color=(255, 0, 0))
+    logout_button = TextButton("LOGOUT", (SCREEN_WIDTH * 3 // 4, 720), menu_font, idle_color=(0, 0, 0), hover_color=(255, 0, 0))
 
     # Difficulty screen UI
     choose_diff_text = menu_font.render("CHOOSE DIFFICULTY", True, (0, 0, 0))
@@ -101,7 +219,18 @@ def run_game():
     hard_button   = TextButton("Hard",   (SCREEN_WIDTH // 2, 690), menu_font, idle_color=(0, 0, 0), hover_color=(255, 0, 0))
     back_button   = TextButton("Back",   (SCREEN_WIDTH // 4, 720), menu_font, idle_color=(0, 0, 0), hover_color=(255, 0, 0))
 
-    # Game Over screen
+    # Login and Leaderboard screens
+    login_screen = LoginScreen()
+    leaderboard_screen = LeaderboardScreen()
+    register_screen = RegisterScreen()
+    guest_load_screen = GuestLoadScreen()
+    guest_profile_buttons: list[TextButton] = []
+
+    def _refresh_guest_profiles():
+        names = list_local_saves(5)
+        guest_load_screen.set_profiles(names)
+
+    # Game Over overlay
     lose_bg = pygame.image.load(str(ASSETS_DIR / "images/menufront.png")).convert_alpha()
     lose_bg = pygame.transform.smoothscale(lose_bg, (SCREEN_WIDTH - 100, SCREEN_HEIGHT - 100))
 
@@ -115,22 +244,22 @@ def run_game():
     btn_back_map = TextButton("BACK", (234, 680), menu_font, idle_color=(50, 234, 0))
     btn_save_quit_map = TextButton("SAVE AND QUIT", (234, 750), menu_font, idle_color=(50, 234, 0))
 
-    # Auto-play time setting
+    # Auto-play state for solution replay
     auto_play = {
         "enabled": False,
         "solution_idx": 0,
         "move_timer": 0.0,
-        "move_delay": 0.5,  
+        "move_delay": 0.5,  # seconds between moves
     }
 
-    img_options = pygame.image.load("game/assets/screen/OPTIONS_BUTTON.png").convert_alpha()
+    img_options = pygame.image.load("game/assets/images/OPTIONS_BUTTON.png").convert_alpha()
     img_options = pygame.transform.smoothscale(img_options, (245, 72))
     options_button = Button(img_options, 110, 216)
 
-    img_done = pygame.image.load("game/assets/screen/DONE_BUTTON.png").convert_alpha()
+    img_done = pygame.image.load("game/assets/images/DONE_BUTTON.png").convert_alpha()
     img_done = pygame.transform.smoothscale(img_done, (180, 54))
     done_button = TextButton("DONE", (650, 500), menu_font, min_size=(270, 90))
-    options_panel_bg = pygame.image.load("game/assets/screen/OPTIONS_BG.png").convert_alpha()
+    options_panel_bg = pygame.image.load("game/assets/images/OPTIONS_BG.png").convert_alpha()
     options_panel_bg = pygame.transform.smoothscale(options_panel_bg, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
     ankh_img = pygame.image.load("game/assets/images/sliderankh.png").convert_alpha()
 
@@ -140,21 +269,122 @@ def run_game():
     font_path = str(ASSETS_DIR / "font" / "romeo.ttf")
     font_medium = pygame.font.Font(font_path, 32)
     menu_y = SCREEN_HEIGHT
+    
+    # ===== Arrow sprites for mouse click movement =====
+    # Arrows are VERTICAL spritesheets with 4 frames: down, right, left, up (in order)
+    arrow_frames = {6: [], 8: [], 10: []}  # Keyed by grid size
+    
+    def _load_arrow_frames_vertical(color_path, mask_path, frame_count):
+        """Load frames from vertical spritesheet with alpha mask."""
+        color_sheet = pygame.image.load(color_path).convert_alpha()
+        mask_sheet = pygame.image.load(mask_path).convert_alpha()
+        
+        # Vertical spritesheet: width is frame width, height / frame_count is frame height
+        w = color_sheet.get_width()
+        h = color_sheet.get_height()
+        fh = h // frame_count  # frame height
+        
+        out_frames = []
+        for i in range(frame_count):
+            # Slice vertically
+            c_frame = color_sheet.subsurface(pygame.Rect(0, i * fh, w, fh)).copy()
+            m_frame = mask_sheet.subsurface(pygame.Rect(0, i * fh, w, fh)).copy()
+            
+            c_frame = c_frame.convert_alpha()
+            m_frame = m_frame.convert_alpha()
+            
+            out = pygame.Surface(c_frame.get_size(), pygame.SRCALPHA, 32)
+            out.blit(c_frame, (0, 0))
+            
+            # Apply mask
+            a = pygame.surfarray.array3d(m_frame)[:, :, 0]
+            out_a = pygame.surfarray.pixels_alpha(out)
+            out_a[:, :] = a
+            del out_a
+            
+            out_frames.append(out)
+        
+        return out_frames
+    
+    def _load_arrow_frames():
+        """Load arrow sprites for all grid sizes."""
+        for size in [6, 8, 10]:
+            try:
+                color_path = str(ASSETS_DIR / "images" / f"arrows{size}.gif")
+                mask_path = str(ASSETS_DIR / "images" / f"_arrows{size}.gif")
+                frames = _load_arrow_frames_vertical(color_path, mask_path, 4)
+                arrow_frames[size] = frames  # [down, right, left, up]
+            except Exception as e:
+                print(f"[Arrows] Failed to load arrows{size}: {e}")
+                arrow_frames[size] = []
+    
+    _load_arrow_frames()
+    
+    def _get_arrow_frame(direction: str):
+        """Get arrow frame for current grid size and direction."""
+        size = ROWS if ROWS in arrow_frames else 10
+        frames = arrow_frames.get(size, [])
+        if not frames:
+            return None
+        # Order in spritesheet: down=0, right=1, left=2, up=3
+        idx_map = {"down": 0, "right": 1, "left": 2, "up": 3}
+        idx = idx_map.get(direction, 0)
+        if idx < len(frames):
+            return frames[idx]
+        return None
+    
+    def _get_valid_moves(p_row: int, p_col: int, g: list) -> dict:
+        """Return dict of valid move directions with their (row, col) targets."""
+        valid = {}
+        cell = g[p_row][p_col]
+        
+        # UP: Check if row > 0 AND cell ABOVE doesn't have wall/gate on its BOTTOM
+        if p_row > 0 and g[p_row - 1][p_col].down not in (1, 2):
+            valid["up"] = (p_row - 1, p_col)
+        
+        # DOWN: Check if row < ROWS-1 AND current cell doesn't have wall/gate on its BOTTOM
+        if p_row < ROWS - 1 and cell.down not in (1, 2):
+            valid["down"] = (p_row + 1, p_col)
+        
+        # LEFT: Check if current cell has no left wall AND col > 0
+        if p_col > 0 and not cell.left:
+            valid["left"] = (p_row, p_col - 1)
+        
+        # RIGHT: Check if current cell has no right wall AND col < COLS-1
+        if p_col < COLS - 1 and not cell.right:
+            valid["right"] = (p_row, p_col + 1)
+        
+        return valid
+    
+    def _mouse_to_grid(mx: int, my: int) -> tuple:
+        """Convert mouse screen coordinates to grid (row, col). Returns None if outside grid."""
+        grid_x = mx - OFFSET_X
+        grid_y = my - OFFSET_Y
+        
+        col = int(grid_x // CELL_SIZE)
+        row = int(grid_y // CELL_SIZE)
+        
+        if 0 <= row < ROWS and 0 <= col < COLS:
+            return (row, col)
+        return None
 
     def _load_floor():
-        # floor6/8/10.jpg
-        img = pygame.image.load(str(ASSETS_DIR / f"floor{ROWS}.jpg")).convert_alpha()
+        # floor6.jpg / floor8.jpg / floor10.jpg now under images/
+        try:
+            img = pygame.image.load(str(ASSETS_DIR / "images" / f"floor{ROWS}.jpg")).convert_alpha()
+        except Exception:
+            img = pygame.image.load(str(ASSETS_DIR / "images" / "floor10.jpg")).convert_alpha()
         return pygame.transform.smoothscale(img, (int(COLS * CELL_SIZE), int(ROWS * CELL_SIZE)))
 
     background = _load_floor()
 
-    backdrop = pygame.image.load(str(ASSETS_DIR / "backdrop_1.png")).convert_alpha()
+    backdrop = pygame.image.load(str(ASSETS_DIR / "images" / "backdrop_1.png")).convert_alpha()
     backdrop = pygame.transform.smoothscale(backdrop, (SCREEN_WIDTH + 10, SCREEN_HEIGHT + 60))
 
-    backdrop_s = pygame.image.load(str(ASSETS_DIR / "backdrop.png")).convert_alpha()
+    backdrop_s = pygame.image.load(str(ASSETS_DIR / "images" / "backdrop.png")).convert_alpha()
     backdrop_s = pygame.transform.smoothscale(backdrop_s, (X, Y))
 
-    # ===== Next level =====
+    # ===== Next level overlay =====
     nextlevel_img = None
     for p in (
         ASSETS_DIR / "nextlevel.jpg",
@@ -169,15 +399,25 @@ def run_game():
 
     nextlevel_btn_font = pygame.font.Font(str(ASSETS_DIR / "font" / "romeo.ttf"), 52)
     nextlevel_button = TextButton(
-        "Go to next level",
-        (OFFSET_X_1 + (SCREEN_WIDTH - OFFSET_X_1) // 2, 600),
+        "Next Level",
+        (OFFSET_X_1 + (SCREEN_WIDTH - OFFSET_X_1) // 2, 520),
         nextlevel_btn_font,
         idle_color=(255, 255, 0),
         hover_color=(255, 255, 255),
         min_size=(540, 90),
     )
     
-    # Return to Menu button autoplay
+    # Back button for adventure mode NEXTLEVEL screen
+    nextlevel_back_button = TextButton(
+        "Back to Menu",
+        (OFFSET_X_1 + (SCREEN_WIDTH - OFFSET_X_1) // 2, 650),
+        nextlevel_btn_font,
+        idle_color=(255, 255, 0),
+        hover_color=(255, 255, 255),
+        min_size=(540, 90),
+    )
+    
+    # Return to Menu button for auto-play completion
     return_menu_button = TextButton(
         "Return to Menu",
         (OFFSET_X_1 + (SCREEN_WIDTH - OFFSET_X_1) // 2, 600),
@@ -206,17 +446,17 @@ def run_game():
         min_size=(540, 90),
     )
 
-    # Loading screen button
+    # Loading screen button (non-functional, just for display)
     loading_button = TextButton(
         "Please wait",
-        (0, 0),  
+        (0, 0),  # Will be repositioned dynamically
         menu_font,
-        idle_color=(255, 255, 255),
-        hover_color=(255,255,255), 
+        idle_color=(0, 0, 0),
+        hover_color=(0, 0, 0),  # Same color since it's non-interactive
         min_size=(300, 80),
     )
 
-    # ===== reset vaiable sau khi đổi mode =====
+    # ===== sync constants after changing ROWS/COLS =====
     def _sync_dynamic_vars():
         names = [
             "ROWS", "COLS", "CELL_SIZE",
@@ -230,17 +470,22 @@ def run_game():
                 t[n] = val
 
     def _rebuild_by_size(size: int):
-        nonlocal grid, player, enemies, gamestate, background, killed_uids, collision_fx
+        nonlocal grid, player, enemies, gamestate, background, killed_uids, collision_fx, current_turn, enemy_turn_idx
 
         V.apply_grid_size(size)
         _sync_dynamic_vars()
 
         grid = [[Cell(r, c) for c in range(COLS)] for r in range(ROWS)]
         player = Player()
-        # Clear enemies 
+        # Clear all old enemies and their states
         enemies.clear()
         killed_uids.clear()
         collision_fx.clear()
+        
+        # Reset turn state to player's turn
+        current_turn = "player"
+        enemy_turn_idx = 0
+        
         gamestate = Gamestate()
         gamestate.mode = "classic"
         gamestate.state = "PLAYING"
@@ -255,6 +500,7 @@ def run_game():
         gamestate.mode = "classic"
         gamestate.state = "PLAYING"
 
+        # Phase 1: enemy count theo difficulty
         if size <= 6:
             gamestate.enemy_count = 1
         elif size <= 8:
@@ -266,7 +512,7 @@ def run_game():
 
     def _load_adventure_level(chapter: int, level: int) -> bool:
         """Adventure: load level JSON tại assets/map/level{chapter}-{level}.json."""
-        nonlocal grid, player, enemies, gamestate, background
+        nonlocal grid, player, enemies, gamestate, background, current_turn, enemy_turn_idx
 
         path = ASSETS_DIR / "map" / f"level{chapter}-{level}.json"
         if not path.exists():
@@ -296,10 +542,15 @@ def run_game():
 
         grid = [[Cell(r, c) for c in range(COLS)] for r in range(ROWS)]
         player = Player()
-        # Clear quái
+        # Clear all old enemies and their states
         enemies.clear()
         killed_uids.clear()
         collision_fx.clear()
+        
+        # Reset turn state to player's turn
+        current_turn = "player"
+        enemy_turn_idx = 0
+        
         gamestate = Gamestate()
         gamestate.mode = "adventure"
         gamestate.state = "PLAYING"
@@ -321,11 +572,149 @@ def run_game():
             return None
         return chapter, level
 
-    # ===== enemy fight =====
+    # ===== Save/Load helpers =====
+    def _show_save_dialog(mode: str, next_state: str):
+        """Show save dialog before transitioning to next_state (for PLAYING state exits)"""
+        print(f"[DIALOG] _show_save_dialog called: mode={mode}, next_state={next_state}")
+        save_dialog["active"] = True
+        save_dialog["dialog_type"] = "save_before_exit"
+        save_dialog["mode_to_save"] = mode
+        save_dialog["pending_state"] = next_state
+        save_dialog["is_guest"] = user_session.get("is_guest", False)
+        print(f"[DIALOG] Dialog activated - type: save_before_exit, is_guest: {save_dialog['is_guest']}")
+        
+        # Configure SaveDialog screen
+        save_dialog_screen.dialog_type = "save_before_exit"
+        save_dialog_screen.phase = "confirm"
+        save_dialog_screen.message = "Save progress?"
+        if save_dialog["is_guest"]:
+            save_dialog["profiles"] = list_local_saves(5)
+            save_dialog_screen.profiles = save_dialog["profiles"]
+            save_dialog_screen.selected_profile = save_dialog["profiles"][0] if save_dialog["profiles"] else None
+        else:
+            save_dialog["profiles"] = []
+
+    def _show_quit_dialog():
+        """Show quit dialog with save option"""
+        print(f"[DIALOG] _show_quit_dialog called")
+        save_dialog["active"] = True
+        save_dialog["dialog_type"] = "quit_confirm"
+        save_dialog["mode_to_save"] = None
+        save_dialog["pending_state"] = None
+        save_dialog["is_guest"] = user_session.get("is_guest", False)
+        print(f"[DIALOG] Dialog activated - type: quit_confirm, is_guest: {save_dialog['is_guest']}")
+        
+        # Configure SaveDialog screen
+        save_dialog_screen.dialog_type = "quit_confirm"
+        save_dialog_screen.phase = "confirm"
+        save_dialog_screen.message = "Save progress before quitting?"
+        save_dialog_screen.profiles = []
+
+    def _show_back_dialog(next_state: str):
+        """Show back confirmation dialog (no save)"""
+        print(f"[DIALOG] _show_back_dialog called: next_state={next_state}")
+        save_dialog["active"] = True
+        save_dialog["dialog_type"] = "back_confirm"
+        save_dialog["mode_to_save"] = None
+        save_dialog["pending_state"] = next_state
+        save_dialog["is_guest"] = False
+        print(f"[DIALOG] Dialog activated - type: back_confirm")
+        
+        # Configure SaveDialog screen
+        save_dialog_screen.dialog_type = "back_confirm"
+        save_dialog_screen.phase = "confirm"
+        save_dialog_screen.message = "Go back without saving?"
+        save_dialog_screen.profiles = []
+
+    def _perform_save(mode: str, profile: str = None):
+        """Save current game state for the specified mode"""
+        print(f"[SAVE] _perform_save called: mode={mode}, profile={profile}")
+        
+        if mode is None:
+            print(f"[SAVE] ERROR: mode is None! Cannot save without mode.")
+            return False
+            
+        try:
+            state, map_data, move_history = serialize_game_state(
+                player, enemies, gamestate, grid, mode
+            )
+            
+            # Determine target username/profile
+            if user_session.get("is_guest"):
+                username = profile or save_dialog.get("selected_profile") or user_session.get("username") or "guest"
+            else:
+                username = user_session["username"]
+            
+            print(f"[SAVE] Saving to username: {username}, mode: {mode}")
+
+            # Load existing save or create new one
+            save_data = load_local(username) or (None if user_session.get("is_guest") else load_firebase(username))
+            
+            if not save_data:
+                save_data = create_save_data(
+                    username,
+                    user_session["password"],
+                    user_session["is_guest"],
+                    user_session["score"]
+                )
+            
+            # Update the appropriate mode section
+            if mode == "adventure":
+                save_data["adventure"] = {
+                    "game_state": state,
+                    "move_history": move_history
+                }
+            else:  # classic
+                save_data["classic"] = {
+                    "game_state": state,
+                    "map_data": map_data,
+                    "move_history": move_history
+                }
+            
+            # Update player info
+            save_data["player_info"]["score"] = user_session["score"]
+            
+            # Save to both local and (if not guest) Firebase
+            save_local(username, save_data)
+            if not user_session.get("is_guest"):
+                save_firebase(username, save_data)
+            
+            print(f"[SAVE] Save completed successfully for {username}")
+            return True
+        except Exception as e:
+            print(f"[SAVE] Failed to save: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+
+    def _create_guest_profile_name():
+        existing = set(list_local_saves(20))
+        for i in range(1, 6):
+            cand = f"guest{i}"
+            if cand not in existing:
+                return cand
+        return None
+
+    def _calculate_level_score():
+        """Calculate score for completed level"""
+        if user_session["level_start_time"] is None:
+            return 0
+        
+        elapsed = time.time() - user_session["level_start_time"]
+        minutes = max(0.1, elapsed / 60.0)  # Minimum 0.1 to avoid division by zero
+        
+        difficulty = "easy" if gamestate.enemy_count == 1 else ("medium" if gamestate.enemy_count == 2 else "hard")
+        
+        actual_moves = len(gamestate.storedmove) - user_session["level_start_moves"]
+        solution_len = len(gamestate.solution) if gamestate.solution else actual_moves
+        
+        return calculate_score(difficulty, minutes, max(1, actual_moves), max(1, solution_len))
+
+    # ===== Phase 1: enemy hooks + collision resolver =====
     # Rule: If an enemy moves into a tile occupied by another enemy that is standing still,
     # then the standing enemy dies. The moving enemy survives.
     killed_uids: set[int] = set()
-    collision_fx: list[dict] = []  # dust effects 
+    collision_fx: list[dict] = []  # dust effects for enemy-enemy collision
 
     def _ensure_enemy_hooks():
         """
@@ -364,7 +753,7 @@ def run_game():
                 # Check: same tile AND not moving AND no pending steps
                 if (other.row == mr and other.col == mc) and (not other.is_moving) and (not getattr(other, "pending_steps", [])):
                     killed_uids.add(other.uid)
-                    # Play a collision sound when an enemy kills another
+                    # Play a collision sound when an enemy kills another (avoid block.wav)
                     hit_snd = gamestate.sfx.get("mummyhowl")
                     if hit_snd:
                         try:
@@ -382,6 +771,7 @@ def run_game():
                     # print(f"[Collision] Enemy {other.uid} ({other.type}) killed by Enemy {mover.uid}")
                     break
 
+        # Ensure all enemies have the collision callback
         for e in enemies:
             if getattr(e, "on_step", None) is not on_enemy_step:
                 e.on_step = on_enemy_step
@@ -396,9 +786,13 @@ def run_game():
             if getattr(e, "pending_steps", []):
                 return False
         return True
-    
-    current_turn = "player"  
+
+    # Turn order tracking
+    current_turn = "player"  # "player" or enemy index (0, 1, 2, ...)
     enemy_turn_idx = 0
+    
+    # Track state before OPTIONS (to return to correct state)
+    options_return_state = "PLAYING"
 
     # ===== MAIN LOOP =====
     while True:
@@ -412,7 +806,7 @@ def run_game():
                 hover_any_button = True
 
         elif gamestate.state == "SELECTION":
-            for r in [classic_button, adventure_button, tutorial_button, quit_button]:
+            for r in [classic_button, adventure_button, tutorial_button, quit_button, leaderboard_button, logout_button]:
                 if r.rect.collidepoint(mouse_pos):
                     hover_any_button = True
                     break
@@ -425,6 +819,8 @@ def run_game():
 
         elif gamestate.state == "NEXTLEVEL":
             if nextlevel_button.rect.collidepoint(mouse_pos):
+                hover_any_button = True
+            elif nextlevel_back_button.rect.collidepoint(mouse_pos):
                 hover_any_button = True
         
         elif gamestate.state == "AUTOPLAY_COMPLETE":
@@ -453,8 +849,16 @@ def run_game():
 
         for e in pygame.event.get():
             if e.type == QUIT:
-                pygame.quit()
-                sys.exit()
+                # Only show save dialog if in an active game state
+                if gamestate.state == "PLAYING":
+                    _show_save_dialog(gamestate.mode, None)  # None means exit game
+                elif gamestate.state == "SELECTION":
+                    # From SELECTION, show quit dialog with save option
+                    _show_quit_dialog()
+                else:
+                    # From login/home/other screens, just quit directly
+                    pygame.quit()
+                    sys.exit()
 
             if e.type == pygame.KEYDOWN and e.key == pygame.K_F11:
                 if hasattr(screen_main, "toggle_fullscreen"):
@@ -467,7 +871,115 @@ def run_game():
             if gamestate.state == "Home":
                 if e.type == pygame.MOUSEBUTTONDOWN:
                     if start_button.is_clicked(mouse_pos):
-                        gamestate.state = "SELECTION"
+                        gamestate.state = "LOGIN"
+                        login_screen.reset()
+
+            # Save dialog handling - new class-based implementation
+            if save_dialog["active"]:
+                if e.type == pygame.MOUSEBUTTONDOWN:
+                    button_rects = save_dialog_screen._calculate_button_rects(SCREEN_WIDTH, SCREEN_HEIGHT)
+                    clicked = save_dialog_screen.get_clicked(mouse_pos, button_rects)
+                    
+                    print(f"[DIALOG EVENT] Clicked: {clicked}, Type: {save_dialog['dialog_type']}, Phase: {save_dialog_screen.phase}")
+                    
+                    if clicked == "yes":
+                        if save_dialog["dialog_type"] == "back_confirm":
+                            # Back without saving
+                            save_dialog["active"] = False
+                            save_dialog_screen.phase = "confirm"
+                            gamestate.state = save_dialog["pending_state"]
+                            previous_state = gamestate.state  # Prevent re-interception
+                            break
+                        elif save_dialog["dialog_type"] == "quit_confirm":
+                            # Save then quit for registered users, profile select for guests
+                            if user_session.get("username") and not user_session.get("is_guest"):
+                                _perform_save(gamestate.mode if hasattr(gamestate, 'mode') else None)
+                                pygame.quit()
+                                sys.exit()
+                            elif user_session.get("is_guest"):
+                                save_dialog_screen.phase = "select_profile"
+                                save_dialog["profiles"] = list_local_saves(5)
+                                save_dialog_screen.profiles = save_dialog["profiles"]
+                                save_dialog_screen.selected_profile = save_dialog["profiles"][0] if save_dialog["profiles"] else None
+                                continue
+                            pygame.quit()
+                            sys.exit()
+                        elif save_dialog["dialog_type"] == "save_before_exit":
+                            # Clicked Yes - check if guest
+                            if user_session.get("is_guest"):
+                                save_dialog_screen.phase = "select_profile"
+                                save_dialog["profiles"] = list_local_saves(5)
+                                save_dialog_screen.profiles = save_dialog["profiles"]
+                                save_dialog_screen.selected_profile = save_dialog["profiles"][0] if save_dialog["profiles"] else None
+                                continue  # Wait for profile selection
+                            else:
+                                # Non-guest: save and transition/exit immediately
+                                _perform_save(save_dialog["mode_to_save"])
+                                save_dialog["active"] = False
+                                save_dialog_screen.phase = "confirm"
+                                if save_dialog["pending_state"] is None:
+                                    # Exit game
+                                    pygame.quit()
+                                    sys.exit()
+                                else:
+                                    gamestate.state = save_dialog["pending_state"]
+                                    previous_state = gamestate.state  # Prevent re-interception
+                                    break
+                    elif clicked == "no":
+                        if save_dialog["dialog_type"] == "save_before_exit":
+                            # Don't save, just transition or exit
+                            save_dialog["active"] = False
+                            save_dialog_screen.phase = "confirm"
+                            if save_dialog["pending_state"] is None:
+                                # Exit game without saving
+                                pygame.quit()
+                                sys.exit()
+                            else:
+                                gamestate.state = save_dialog["pending_state"]
+                                previous_state = gamestate.state  # Prevent re-interception
+                                break
+                        elif save_dialog["dialog_type"] == "quit_confirm":
+                            # Quit without saving
+                            pygame.quit()
+                            sys.exit()
+                        elif save_dialog["dialog_type"] == "back_confirm":
+                            # No - stay in current state
+                            save_dialog["active"] = False
+                            save_dialog_screen.phase = "confirm"
+                    elif clicked == "back":
+                        if save_dialog_screen.phase == "select_profile":
+                            save_dialog_screen.phase = "confirm"
+                    elif clicked and clicked not in ["yes", "no", "back"]:
+                        # Profile selected - only process if in select_profile phase
+                        if save_dialog_screen.phase == "select_profile":
+                            save_dialog_screen.selected_profile = clicked
+                            
+                            # Perform save with selected profile
+                            mode_to_save = save_dialog["mode_to_save"]
+                            dialog_type = save_dialog["dialog_type"]
+                            pending_state = save_dialog["pending_state"]
+                            
+                            _perform_save(mode_to_save, clicked)
+                            
+                            # Close dialog immediately
+                            save_dialog["active"] = False
+                            save_dialog_screen.phase = "confirm"
+                            
+                            # Execute action based on dialog type
+                            if dialog_type == "quit_confirm":
+                                pygame.quit()
+                                sys.exit()
+                            elif dialog_type == "save_before_exit" and pending_state is None:
+                                # save_before_exit with None pending_state means exit game
+                                pygame.quit()
+                                sys.exit()
+                            else:
+                                # Transition to target state immediately
+                                gamestate.state = pending_state
+                                previous_state = gamestate.state  # Prevent re-interception
+                                break
+                        continue  # Skip if not in correct phase
+                    continue  # Skip other state event handling while dialog is active
 
             elif gamestate.state == "SELECTION":
                 if e.type == pygame.MOUSEBUTTONDOWN:
@@ -502,15 +1014,221 @@ def run_game():
                             try:
                                 gamestate.sfx["click"].play()
                             except: pass
-                        print("Chọn Tutorial (chưa làm)")
+                        gamestate.state = "TUTORIAL"
+
+                    elif leaderboard_button.is_clicked(mouse_pos):
+                        if gamestate.sfx.get("click") is not None:
+                            try:
+                                gamestate.sfx["click"].play()
+                            except: pass
+                        # Fetch leaderboard from Firebase
+                        leaderboard_data = get_leaderboard(10)
+                        leaderboard_screen.set_leaderboard(leaderboard_data)
+                        gamestate.state = "LEADERBOARD"
 
                     elif quit_button.is_clicked(mouse_pos):
                         if gamestate.sfx.get("click") is not None:
                             try:
                                 gamestate.sfx["click"].play()
                             except: pass
-                        pygame.quit()
-                        sys.exit()
+                        # Open options menu from SELECTION
+                        options_return_state = "SELECTION"
+                        gamestate.state = "OPTIONS"
+                    
+                    elif logout_button.is_clicked(mouse_pos):
+                        if gamestate.sfx.get("click") is not None:
+                            try:
+                                gamestate.sfx["click"].play()
+                            except: pass
+                        # Clear user session and return to LOGIN
+                        user_session.clear()
+                        user_session["is_guest"] = False
+                        user_session["username"] = None
+                        user_session["password"] = None
+                        login_screen.reset()
+                        gamestate.state = "LOGIN"
+
+            elif gamestate.state == "LOGIN":
+                if e.type == pygame.KEYDOWN or e.type == pygame.MOUSEBUTTONDOWN:
+                    action = login_screen.handle_event(e)
+                    
+                    if action == "login":
+                        # Attempt login
+                        username, password = login_screen.get_credentials()
+                        if username and password:
+                            # Verify login against local/Firebase saves
+                            if verify_login(username, password):
+                                user_session["username"] = username
+                                user_session["password"] = password
+                                user_session["is_guest"] = False
+                                # Load player data from save
+                                player_data = load_local(username)
+                                if player_data:
+                                    user_session["score"] = player_data.get("player_info", {}).get("score", 0)
+                                gamestate.state = "SELECTION"
+                            else:
+                                login_screen.set_error("Invalid username or password")
+                        else:
+                            login_screen.set_error("Username and password required")
+                    
+                    # Mouse clicks for buttons
+                    if e.type == pygame.MOUSEBUTTONDOWN:
+                        button_rects = login_screen._calculate_button_rects(SCREEN_WIDTH, SCREEN_HEIGHT)
+                        
+                        # Login button
+                        if button_rects["login_btn"].collidepoint(mouse_pos):
+                            username, password = login_screen.get_credentials()
+                            if username and password:
+                                if verify_login(username, password):
+                                    user_session["username"] = username
+                                    user_session["password"] = password
+                                    user_session["is_guest"] = False
+                                    player_data = load_local(username)
+                                    if player_data:
+                                        user_session["score"] = player_data.get("player_info", {}).get("score", 0)
+                                    gamestate.state = "SELECTION"
+                                else:
+                                    login_screen.set_error("Invalid username or password")
+                            else:
+                                login_screen.set_error("Username and password required")
+                        
+                        # Register button (goes to REGISTER state)
+                        elif button_rects["create_btn"].collidepoint(mouse_pos):
+                            gamestate.state = "REGISTER"
+                            register_screen.reset()
+                        
+                        # Play as Guest button -> go to guest load screen
+                        elif button_rects["guest_btn"].collidepoint(mouse_pos):
+                            user_session["username"] = "Guest"
+                            user_session["is_guest"] = True
+                            user_session["score"] = 0
+                            _refresh_guest_profiles()
+                            gamestate.state = "GUEST_LOAD"
+
+                        # Load Local Save (guest)
+                        elif button_rects.get("load_guest_btn") and button_rects["load_guest_btn"].collidepoint(mouse_pos):
+                            user_session["is_guest"] = True
+                            _refresh_guest_profiles()
+                            gamestate.state = "GUEST_LOAD"
+
+            elif gamestate.state == "REGISTER":
+                if e.type == pygame.KEYDOWN or e.type == pygame.MOUSEBUTTONDOWN:
+                    action = register_screen.handle_event(e)
+                    
+                    if action == "register":
+                        # Attempt registration
+                        username, password, confirm = register_screen.get_credentials()
+                        if username and password and confirm:
+                            if len(username) < 3:
+                                register_screen.set_error("Username must be at least 3 characters")
+                            elif len(password) < 4:
+                                register_screen.set_error("Password must be at least 4 characters")
+                            elif password != confirm:
+                                register_screen.set_error("Passwords do not match")
+                            else:
+                                # Create new account
+                                save_data = {
+                                    "player_info": {
+                                        "username": username,
+                                        "password": password,
+                                        "score": 0
+                                    },
+                                    "classic": {},
+                                    "adventure": {}
+                                }
+                                save_local(username, save_data)
+                                user_session["username"] = username
+                                user_session["password"] = password
+                                user_session["is_guest"] = False
+                                user_session["score"] = 0
+                                gamestate.state = "SELECTION"
+                        else:
+                            register_screen.set_error("All fields required")
+                    
+                    # Mouse clicks for buttons
+                    if e.type == pygame.MOUSEBUTTONDOWN:
+                        button_rects = register_screen._calculate_button_rects(SCREEN_WIDTH, SCREEN_HEIGHT)
+                        
+                        # Register button
+                        if button_rects["register_btn"].collidepoint(mouse_pos):
+                            username, password, confirm = register_screen.get_credentials()
+                            if username and password and confirm:
+                                if len(username) < 3:
+                                    register_screen.set_error("Username must be at least 3 characters")
+                                elif len(password) < 4:
+                                    register_screen.set_error("Password must be at least 4 characters")
+                                elif password != confirm:
+                                    register_screen.set_error("Passwords do not match")
+                                else:
+                                    # Create new account
+                                    save_data = {
+                                        "player_info": {
+                                            "username": username,
+                                            "password": password,
+                                            "score": 0
+                                        },
+                                        "classic": {},
+                                        "adventure": {}
+                                    }
+                                    save_local(username, save_data)
+                                    user_session["username"] = username
+                                    user_session["password"] = password
+                                    user_session["is_guest"] = False
+                                    user_session["score"] = 0
+                                    gamestate.state = "SELECTION"
+                            else:
+                                register_screen.set_error("All fields required")
+                        
+                        # Back button
+                        elif button_rects["back_btn"].collidepoint(mouse_pos):
+                            gamestate.state = "LOGIN"
+                            login_screen.reset()
+
+            elif gamestate.state == "LEADERBOARD":
+                if e.type == pygame.KEYDOWN or e.type == pygame.MOUSEBUTTONDOWN:
+                    action = leaderboard_screen.handle_event(e)
+                    
+                    if action == "back":
+                        gamestate.state = "SELECTION"
+
+            elif gamestate.state == "GUEST_LOAD":
+                if e.type == pygame.MOUSEBUTTONDOWN or e.type == pygame.KEYDOWN:
+                    action = guest_load_screen.handle_event(e)
+                    
+                    if action == "back":
+                        gamestate.state = "LOGIN"
+                        login_screen.reset()
+                    elif e.type == pygame.MOUSEBUTTONDOWN:
+                        profile_rects = guest_load_screen.draw(surface, SCREEN_WIDTH, SCREEN_HEIGHT)
+                        clicked = guest_load_screen.get_clicked_profile(mouse_pos)
+                        
+                        if clicked == "_new_profile":
+                            name = _create_guest_profile_name() or "guest"
+                            user_session["username"] = name
+                            user_session["password"] = None
+                            user_session["is_guest"] = True
+                            user_session["score"] = 0
+                            gamestate.state = "SELECTION"
+                        elif clicked == "_back":
+                            gamestate.state = "LOGIN"
+                            login_screen.reset()
+                        elif clicked and clicked.startswith("_"):
+                            pass  # Skip internal keys
+                        elif clicked:
+                            # Regular profile selected
+                            data = load_local(clicked)
+                            if data:
+                                user_session["username"] = clicked
+                                user_session["password"] = None
+                                user_session["is_guest"] = True
+                                user_session["score"] = data.get("player_info", {}).get("score", 0)
+                            gamestate.state = "SELECTION"
+
+            elif gamestate.state == "TUTORIAL":
+                if e.type == pygame.KEYDOWN and e.key == pygame.K_ESCAPE:
+                    gamestate.state = "SELECTION"
+                elif e.type == pygame.MOUSEBUTTONDOWN:
+                    gamestate.state = "SELECTION"
 
             elif gamestate.state == "DIFFICULTY":
                 if e.type == pygame.MOUSEBUTTONDOWN:
@@ -568,6 +1286,14 @@ def run_game():
                                 ch, lv = nxt
                                 ok = _load_adventure_level(ch, lv)
                                 gamestate.state = "PLAYING" if ok else "SELECTION"
+                    elif nextlevel_back_button.is_clicked(mouse_pos):
+                        if gamestate.sfx.get("click") is not None:
+                            try:
+                                gamestate.sfx["click"].play()
+                            except: pass
+                        gamestate.state = "SELECTION"
+                        gamestate.mode = "classic"
+                        gamestate.gameover = False
             
             elif gamestate.state == "AUTOPLAY_COMPLETE":
                 if e.type == pygame.MOUSEBUTTONDOWN:
@@ -606,12 +1332,16 @@ def run_game():
                             try:
                                 gamestate.sfx["click"].play()
                             except: pass
-                        gamestate.state = "SELECTION"
-                        gamestate.mode = "classic"
-                        gamestate.gameover = False
+                        if not user_session.get("is_guest"):
+                            _show_save_dialog(gamestate.mode, "SELECTION")
+                        else:
+                            gamestate.state = "SELECTION"
+                            gamestate.mode = "classic"
+                            gamestate.gameover = False
 
             elif gamestate.state == "PLAYING":
                 if e.type == MOUSEBUTTONDOWN and options_button.is_clicked(e):
+                    options_return_state = "PLAYING"
                     gamestate.state = "OPTIONS"
 
                 # INPUT chỉ khi player turn và tất cả idle (Phase 1)
@@ -644,15 +1374,63 @@ def run_game():
                                 enemy_turn_idx = 0
 
                 if e.type == MOUSEBUTTONDOWN:
-                    # Check undo button
-                    if undobutton.is_clicked(e.pos):
+                    # Check mouse click movement (only when player's turn and all idle)
+                    if current_turn == "player" and _actors_idle() and not gamestate.gameover and not auto_play["enabled"]:
+                        clicked_grid = _mouse_to_grid(mouse_pos[0], mouse_pos[1])
+                        if clicked_grid:
+                            click_row, click_col = clicked_grid
+                            # Check if clicked on player (skip turn)
+                            if click_row == player.row and click_col == player.col:
+                                moved = player.move(K_SPACE, grid)
+                                if moved:
+                                    check_special_tiles(player, grid, gamestate)
+                                    if gamestate.state != "DEATH_ANIM":
+                                        losing_check(None, None, player, enemies, gamestate)
+                                    if gamestate.state != "DEATH_ANIM":
+                                        gamestate.pending_snapshot = True
+                                        _ensure_enemy_hooks()
+                                        current_turn = 0
+                                        enemy_turn_idx = 0
+                            else:
+                                # Check if clicked on valid adjacent cell
+                                valid_moves = _get_valid_moves(player.row, player.col, grid)
+                                for direction, (target_row, target_col) in valid_moves.items():
+                                    if click_row == target_row and click_col == target_col:
+                                        # Map direction to key
+                                        key_map = {"up": K_UP, "down": K_DOWN, "left": K_LEFT, "right": K_RIGHT}
+                                        move_key = key_map[direction]
+                                        moved = player.move(move_key, grid)
+                                        if moved:
+                                            # Play footstep sound
+                                            if ROWS <= 6:
+                                                sound = gamestate.sfx.get("expwalk_small")
+                                            elif ROWS <= 8:
+                                                sound = gamestate.sfx.get("expwalk_medium")
+                                            else:
+                                                sound = gamestate.sfx.get("expwalk_large")
+                                            if sound:
+                                                try:
+                                                    sound.play()
+                                                except: pass
+                                            check_special_tiles(player, grid, gamestate)
+                                            if gamestate.state != "DEATH_ANIM":
+                                                losing_check(None, None, player, enemies, gamestate)
+                                            if gamestate.state != "DEATH_ANIM":
+                                                gamestate.pending_snapshot = True
+                                                _ensure_enemy_hooks()
+                                                current_turn = 0
+                                                enemy_turn_idx = 0
+                                        break
+                    
+                    # Check undo button - only allow when all actors are idle
+                    if undobutton.is_clicked(e.pos) and _actors_idle():
                         if gamestate.sfx.get("click") is not None:
                             try:
                                 gamestate.sfx["click"].play()
                             except: pass
                         undobutton.undo_move(e, player, enemies, gamestate, grid)
-                        killed_uids.clear()  # Hồi sinh quái khi undo
-                        collision_fx.clear()
+                        killed_uids.clear()  # Respawn all dead enemies on undo
+                        collision_fx.clear()  # Clear collision effects
                     # Check restart button
                     elif restartbutton.is_clicked(e.pos):
                         if gamestate.sfx.get("click") is not None:
@@ -660,11 +1438,14 @@ def run_game():
                                 gamestate.sfx["click"].play()
                             except: pass
                         restartbutton.restart_game(e, player, enemies, gamestate, grid)
-                        killed_uids.clear()  # Hồi sinh quái khi restart
-                        collision_fx.clear()  
+                        killed_uids.clear()  # Respawn all dead enemies
+                        collision_fx.clear()  # Clear collision effects
                         current_turn = "player"
                         enemy_turn_idx = 0
                         gamestate.state = "PLAYING"
+                        # Reset level timer on restart
+                        user_session["level_start_time"] = time.time()
+                        user_session["level_start_moves"] = len(gamestate.storedmove)
                     # Check new game button
                     elif gamestate.mode != "adventure" and newgamebutton.is_clicked(e.pos):
                         if gamestate.sfx.get("click") is not None:
@@ -680,11 +1461,14 @@ def run_game():
                         loading_state["start_time"] = pygame.time.get_ticks() / 1000.0
                     # Check exit button
                     elif exitbutton.is_clicked(e.pos):
+                        print(f"[PLAYING] EXIT button clicked, mode: {gamestate.mode}")
                         if gamestate.sfx.get("click") is not None:
                             try:
                                 gamestate.sfx["click"].play()
                             except: pass
-                        exitbutton.exit_game(e, gamestate)
+                        # Show save dialog before exiting - determine target state based on mode
+                        target_state = "SELECTION"  # Both modes return to SELECTION
+                        _show_save_dialog(target_state, target_state)
 
             elif gamestate.state == "DEATH_ANIM":
                 # Lock input during death animation
@@ -697,12 +1481,14 @@ def run_game():
                 pygame.mixer.music.set_volume(s_music.val)
 
                 if e.type == pygame.MOUSEBUTTONDOWN and done_button.is_clicked(mouse_pos):
-                    gamestate.state = "PLAYING"
+                    gamestate.state = options_return_state
+                elif e.type == pygame.KEYDOWN and e.key == pygame.K_ESCAPE:
+                    gamestate.state = options_return_state
 
             elif gamestate.state == "LOSE_MENU":
                 if e.type == pygame.MOUSEBUTTONDOWN:
                     dy = menu_y - target_y
-                   
+                    # Create adjusted mouse position for buttons drawn with offset
                     adjusted_mouse_pos = (mouse_pos[0], mouse_pos[1] - dy)
                     
                     if btn_try_again.is_clicked(adjusted_mouse_pos):
@@ -722,7 +1508,10 @@ def run_game():
                         gamestate.gameover = False
                         gamestate.death_state = None
                         menu_y = SCREEN_HEIGHT
-                    elif btn_undo_move.is_clicked(adjusted_mouse_pos):
+                        # Reset level timer on retry
+                        user_session["level_start_time"] = time.time()
+                        user_session["level_start_moves"] = len(gamestate.storedmove)
+                    elif btn_undo_move.is_clicked(adjusted_mouse_pos) and _actors_idle():
                         if gamestate.sfx.get("click") is not None:
                             try:
                                 gamestate.sfx["click"].play()
@@ -742,7 +1531,7 @@ def run_game():
                         for en in enemies:
                             en.update(0)
                     elif btn_abandon_hope.is_clicked(adjusted_mouse_pos):
-                        #autoplay mode
+                        # Available in both modes; functional in both
                         if gamestate.sfx.get("click") is not None:
                             try:
                                 gamestate.sfx["click"].play()
@@ -750,8 +1539,8 @@ def run_game():
                         if gamestate.solution:
                             # Reset to initial position
                             if gamestate.initpos:
-                                from module.module import apply_tuple
-                                apply_tuple(gamestate.initpos, player, enemies, grid, gamestate)
+                                from module.module import apply_snapshot
+                                apply_snapshot(gamestate.initpos, player, enemies, grid, gamestate)
                                 # print(f"[AutoPlay] Starting with {len(gamestate.solution)} moves")
                             # Start auto-play
                             auto_play["enabled"] = True
@@ -808,12 +1597,21 @@ def run_game():
                         pygame.quit()
                         sys.exit()
 
-        # ===== update animation =====
+        # ===== Track state transitions for level initialization =====
+        if gamestate.state != previous_state:
+            if gamestate.state == "PLAYING" and previous_state != "PLAYING":
+                # Entering PLAYING state: initialize level timer
+                user_session["level_start_time"] = time.time()
+                user_session["level_start_moves"] = len(gamestate.storedmove) if gamestate.storedmove else 0
+            previous_state = gamestate.state
+
+        # ===== update actors =====
         if gamestate.state == "PLAYING" and (not gamestate.gameover):
             _ensure_enemy_hooks()
 
+            # If a trap death requested an immediate snapshot, do it now
             if getattr(gamestate, "_force_snapshot_now", False):
-                gamestate.storedmove.append(create_tuple(player, enemies, gamestate))
+                gamestate.storedmove.append(make_snapshot(player, enemies, gamestate))
                 try:
                     delattr(gamestate, "_force_snapshot_now")
                 except Exception:
@@ -821,22 +1619,24 @@ def run_game():
 
             player.update(dt)
             for en in enemies:
+                # Skip updating dead enemies
                 if en.uid not in killed_uids:
                     en.update(dt)
 
-            # Handle enemy turns theo lượt
+            # Handle enemy turns sequentially
             if current_turn != "player" and _actors_idle():
+                # All previous actors idle, execute current enemy turn
                 if current_turn < len(enemies):
                     en = enemies[current_turn]
                     en.move(player, grid)
                     # Check collision after this enemy moves
                     if gamestate.state != "DEATH_ANIM":
                         losing_check(None, None, player, enemies, gamestate)
-                    # Xóa quái khi bị giết
+                    # Remove dead enemies immediately so their anim stops
                     if killed_uids:
                         enemies[:] = [e for e in enemies if e.uid not in killed_uids]
                         killed_uids.clear()
-                        
+                        # If we removed the current slot or beyond, clamp turn index
                         if current_turn >= len(enemies):
                             current_turn = len(enemies)
                     # Move to next enemy or back to player
@@ -851,7 +1651,7 @@ def run_game():
                 enemies[:] = [en for en in enemies if en.uid not in killed_uids]
                 killed_uids.clear()
 
-            #dust effects
+            # Update enemy-enemy collision dust effects
             if gamestate.dust_frames:
                 alive_fx = []
                 for fx in collision_fx:
@@ -867,7 +1667,7 @@ def run_game():
 
             # append snapshot when turn fully settled
             if getattr(gamestate, "pending_snapshot", False) and _actors_idle():
-                gamestate.storedmove.append(create_tuple(player, enemies, gamestate))
+                gamestate.storedmove.append(make_snapshot(player, enemies, gamestate))
                 gamestate.pending_snapshot = False
 
         elif gamestate.state == "DEATH_ANIM":
@@ -888,7 +1688,7 @@ def run_game():
 
             # Handle enemy turns sequentially
             if current_turn != "player" and _actors_idle():
-            
+                # All previous actors idle, execute current enemy turn
                 if current_turn < len(enemies):
                     en = enemies[current_turn]
                     if en.uid not in killed_uids:
@@ -904,10 +1704,11 @@ def run_game():
                             current_turn = len(enemies)
                     current_turn += 1
                 else:
+                    # All enemies done, wait for all animations to finish then back to player
                     if _actors_idle():
                         current_turn = "player"
             
-            # AUTO-PLAY
+            # AUTO-PLAY: Execute next move from solution only when it's player turn and all idle
             if auto_play["enabled"] and current_turn == "player" and _actors_idle():
                 auto_play["move_timer"] += dt
                 if auto_play["move_timer"] >= auto_play["move_delay"]:
@@ -946,7 +1747,7 @@ def run_game():
                                     current_turn = 0
                                     enemy_turn_idx = 0
                                 else:
-    
+                                    # Death during autoplay, stop
                                     auto_play["enabled"] = False
                                     return
                         auto_play["solution_idx"] += 1
@@ -956,7 +1757,7 @@ def run_game():
                         auto_play["enabled"] = False
                         # Reset to a fresh state after autoplay
                         if gamestate.initpos:
-                            apply_tuple(gamestate.initpos, player, enemies, grid, gamestate)
+                            apply_snapshot(gamestate.initpos, player, enemies, grid, gamestate)
                         killed_uids.clear()
                         collision_fx.clear()
                         current_turn = "player"
@@ -964,11 +1765,12 @@ def run_game():
                         gamestate.gameover = False
                         gamestate.state = "AUTOPLAY_COMPLETE"
 
+            # apply enemy-vs-enemy kills after updates
             if killed_uids:
                 enemies[:] = [en for en in enemies if en.uid not in killed_uids]
                 killed_uids.clear()
 
-            #dust effects
+            # Update enemy-enemy collision dust effects
             if gamestate.dust_frames:
                 alive_fx = []
                 for fx in collision_fx:
@@ -989,7 +1791,7 @@ def run_game():
                 auto_play["enabled"] = False
                 # Fresh reset after autoplay goal
                 if gamestate.initpos:
-                    apply_tuple(gamestate.initpos, player, enemies, grid, gamestate)
+                    apply_snapshot(gamestate.initpos, player, enemies, grid, gamestate)
                 killed_uids.clear()
                 collision_fx.clear()
                 current_turn = "player"
@@ -997,10 +1799,15 @@ def run_game():
                 gamestate.gameover = False
                 # print("[AutoPlay] Goal reached during auto-play!")
 
-        # Win check 
-        if gamestate.state == "PLAYING" and (not gamestate.gameover):
+        # Win detection (skip if loading screen is active - new game being generated)
+        if gamestate.state == "PLAYING" and (not gamestate.gameover) and (not loading_state["active"]):
             if player.row == gamestate.goal_row and player.col == gamestate.goal_col:
                 gamestate.gameover = True
+                
+                # Calculate and add score for completed level
+                level_score = _calculate_level_score()
+                user_session["score"] += level_score
+                
                 if gamestate.mode == "adventure":
                     gamestate.state = "NEXTLEVEL"
                 else:
@@ -1021,12 +1828,29 @@ def run_game():
             if start_button.rect.collidepoint(mouse_pos):
                 pygame.draw.rect(surface, (255, 255, 0), start_button.rect, 2)
 
+        elif gamestate.state == "LOGIN":
+            surface.blit(start_bg, (0, 0))
+            login_screen.draw(surface, SCREEN_WIDTH, SCREEN_HEIGHT)
+
+        elif gamestate.state == "REGISTER":
+            surface.blit(start_bg, (0, 0))
+            register_screen.draw(surface, SCREEN_WIDTH, SCREEN_HEIGHT)
+
+        elif gamestate.state == "LEADERBOARD":
+            surface.blit(start_bg, (0, 0))
+            leaderboard_screen.draw(surface, SCREEN_WIDTH, SCREEN_HEIGHT)
+
+        elif gamestate.state == "GUEST_LOAD":
+            guest_load_screen.draw(surface, SCREEN_WIDTH, SCREEN_HEIGHT)
+
         elif gamestate.state == "SELECTION":
             surface.blit(modeSelect_bg, (0, 0))
             classic_button.draw(surface, mouse_pos)
             tutorial_button.draw(surface, mouse_pos)
             adventure_button.draw(surface, mouse_pos)
             quit_button.draw(surface, mouse_pos)
+            leaderboard_button.draw(surface, mouse_pos)
+            logout_button.draw(surface, mouse_pos)
 
         elif gamestate.state == "DIFFICULTY":
             surface.blit(modeSelect_bg, (0, 0))
@@ -1036,12 +1860,78 @@ def run_game():
             hard_button.draw(surface, mouse_pos)
             back_button.draw(surface, mouse_pos)
 
+        elif gamestate.state == "TUTORIAL":
+            # Simple text-only tutorial screen
+            surface.blit(modeSelect_bg, (0, 0))
+            
+            # Semi-transparent overlay
+            overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+            overlay.set_alpha(200)
+            overlay.fill((20, 20, 40))
+            surface.blit(overlay, (0, 0))
+            
+            tutorial_font = pygame.font.SysFont("Verdana", 28)
+            title_font = pygame.font.SysFont("Verdana", 48, bold=True)
+            
+            # Title
+            title = title_font.render("HOW TO PLAY", True, (255, 200, 100))
+            title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, 80))
+            surface.blit(title, title_rect)
+            
+            # Tutorial text
+            tutorial_lines = [
+                "",
+                "CONTROLS:",
+                "  Arrow Keys / WASD - Move the explorer",
+                "  SPACE - Skip your turn (stay in place)",
+                "  ESC - Open options / Go back",
+                "",
+                "OBJECTIVE:",
+                "  Reach the exit staircase to complete the level",
+                "  Avoid mummies and scorpions!",
+                "",
+                "RULES:",
+                "  - You move first, then enemies move",
+                "  - Mummies move 2 steps per turn (vertical first)",
+                "  - Scorpions move 1 step per turn (horizontal first)",
+                "  - Lure enemies into walls or each other to defeat them",
+                "  - Collect keys to open gates",
+                "",
+                "BUTTONS:",
+                "  UNDO - Go back one move",
+                "  RESTART - Reset the current level",
+                "  NEW GAME - Generate a new random level (Classic mode)",
+                "",
+                "Click anywhere or press ESC to go back"
+            ]
+            
+            y_offset = 130
+            for line in tutorial_lines:
+                if line.startswith("CONTROLS:") or line.startswith("OBJECTIVE:") or line.startswith("RULES:") or line.startswith("BUTTONS:"):
+                    color = (255, 200, 100)  # Yellow for headers
+                else:
+                    color = (220, 220, 220)  # White for content
+                text = tutorial_font.render(line, True, color)
+                surface.blit(text, (100, y_offset))
+                y_offset += 32
+
         elif gamestate.state == "NEXTLEVEL":
+            # Adventure mode level complete screen (similar to classic WIN_SCREEN)
             if nextlevel_img is not None:
                 surface.blit(nextlevel_img, (OFFSET_X_1, 0))
             else:
                 surface.blit(modeSelect_bg, (0, 0))
+            
+            # Draw "Level Complete!" text
+            win_text = nextlevel_btn_font.render("Level Complete!", True, (255, 255, 0))
+            win_rect = win_text.get_rect(center=(OFFSET_X_1 + (SCREEN_WIDTH - OFFSET_X_1) // 2, 300))
+            surface.blit(win_text, win_rect)
+            
+            # Display level score using sprite font, centered
+            render_score(surface, user_session.get("score", 0), (OFFSET_X_1 + (SCREEN_WIDTH - OFFSET_X_1) // 2, SCREEN_HEIGHT // 2), scale=1.4)
+            
             nextlevel_button.draw(surface, mouse_pos)
+            nextlevel_back_button.draw(surface, mouse_pos)
         
         elif gamestate.state == "WIN_SCREEN":
             # Classic mode win screen
@@ -1054,6 +1944,9 @@ def run_game():
             win_text = nextlevel_btn_font.render("You Win!", True, (255, 255, 0))
             win_rect = win_text.get_rect(center=(OFFSET_X_1 + (SCREEN_WIDTH - OFFSET_X_1) // 2, 300))
             surface.blit(win_text, win_rect)
+            
+            # Display level score using sprite font, centered on win image
+            render_score(surface, user_session.get("score", 0), (OFFSET_X_1 + (SCREEN_WIDTH - OFFSET_X_1) // 2, SCREEN_HEIGHT // 2), scale=1.4)
             
             win_newgame_button.draw(surface, mouse_pos)
             win_back_button.draw(surface, mouse_pos)
@@ -1082,6 +1975,9 @@ def run_game():
             death_active = gamestate.state == "DEATH_ANIM" and getattr(gamestate, "death_state", None)
             death_cause = gamestate.death_state.get("cause") if death_active else None
             death_pos = (gamestate.death_state.get("row"), gamestate.death_state.get("col")) if death_active else (-1, -1)
+
+            # Top-down, row-based rendering: walls (DOWN/LEFT) have priority
+            # Build enemy lookup for quick access
             pos_to_enemy = {}
             for en in enemies:
                 if en.uid not in killed_uids:
@@ -1090,7 +1986,7 @@ def run_game():
             # Track which gates have been drawn (to avoid duplicate)
             drawn_gates = set()
             
-            # Draw theo từng ô tránh đè nhau
+            # Draw row by row from top to bottom
             for row in grid:
                 for cell in row:
                     # 1. Draw floor/background first
@@ -1177,6 +2073,45 @@ def run_game():
                                 surface.blit(frame, (gx, gy))
                             except: pass
             
+            # Remaining gates pass removed; gates are drawn per cell with walls
+            
+            # ===== Draw movement arrows around player =====
+            # Only show when it's player's turn, all actors idle, game not over, and not auto-playing
+            if current_turn == "player" and _actors_idle() and not gamestate.gameover and not auto_play["enabled"] and not loading_state["active"]:
+                valid_moves = _get_valid_moves(player.row, player.col, grid)
+                player_cx = OFFSET_X + player.col * CELL_SIZE + CELL_SIZE / 2
+                player_cy = OFFSET_Y + player.row * CELL_SIZE + CELL_SIZE / 2
+                
+                for direction, (target_row, target_col) in valid_moves.items():
+                    arrow_frame = _get_arrow_frame(direction)
+                    if arrow_frame:
+                        # Scale arrow smaller than cell (60% of cell size)
+                        target_size = CELL_SIZE * 0.6
+                        factor = target_size / arrow_frame.get_width()
+                        if hasattr(pygame.transform, "smoothscale_by"):
+                            scaled_arrow = pygame.transform.smoothscale_by(arrow_frame, factor)
+                        else:
+                            w, h = arrow_frame.get_size()
+                            scaled_arrow = pygame.transform.smoothscale(arrow_frame, (int(w * factor), int(h * factor)))
+                        
+                        # Position arrow between player and target cell
+                        aw, ah = scaled_arrow.get_width(), scaled_arrow.get_height()
+                        offset = CELL_SIZE * 0.75  # Distance from player center
+                        
+                        if direction == "up":
+                            ax = player_cx - aw / 2
+                            ay = player_cy - offset - ah / 2
+                        elif direction == "down":
+                            ax = player_cx - aw / 2
+                            ay = player_cy + offset - ah / 2
+                        elif direction == "left":
+                            ax = player_cx - offset - aw / 2
+                            ay = player_cy - ah / 2
+                        elif direction == "right":
+                            ax = player_cx + offset - aw / 2
+                            ay = player_cy - ah / 2
+                        
+                        surface.blit(scaled_arrow, (ax, ay))
             
             # Update gate animations
             if gamestate.gate_frames:
@@ -1211,16 +2146,24 @@ def run_game():
                 current_time = pygame.time.get_ticks() / 1000.0
                 elapsed_time = current_time - loading_state["start_time"]
                 
+                # Randomly increment progress every 0.05-0.15 seconds
+                if loading_state["timer"] >= random.uniform(0.05, 0.15):
+                    loading_state["timer"] = 0.0
+                    if loading_state["progress"] < 0.95:  # Don't fill completely until generation done
+                        loading_state["progress"] += random.uniform(0.05, 0.15)
+                
                 # Start actual generation after a brief visual delay
-                if not loading_state["generating"] :
+                if not loading_state["generating"] and loading_state["progress"] > 0.1:
                     loading_state["generating"] = True
                     # Perform the actual generation
                     newgamebutton.newgame_game(None, grid, player, enemies, gamestate)
                     killed_uids.clear()
                     collision_fx.clear()
+                    # Mark as complete
+                    loading_state["progress"] = 1.0
                 
                 # Clear loading screen only after 2 seconds minimum AND generation complete
-                if loading_state["generating"] and elapsed_time >= 2.0:
+                if loading_state["progress"] >= 1.0 and loading_state["generating"] and elapsed_time >= 2.0:
                     loading_state["active"] = False
                     loading_state["generating"] = False
 
@@ -1426,6 +2369,10 @@ def run_game():
             s_sound.draw(surface, font_medium, ankh_img)
             s_speed.draw(surface, font_medium, ankh_img)
             done_button.draw(surface, mouse_pos)
+
+        # Render save dialog overlay (on top of everything) - using new SaveDialog class
+        if save_dialog["active"]:
+            save_dialog_screen.draw(surface, SCREEN_WIDTH, SCREEN_HEIGHT, mouse_pos)
 
         screen_main.render()
 

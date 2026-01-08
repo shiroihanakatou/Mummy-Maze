@@ -66,9 +66,9 @@ class Gamestate:
         self.sfx = {}
 
         try:
-            self.sprite_sheet = pygame.image.load(f"game/assets/stairs{ROWS}.png").convert_alpha()
+            self.sprite_sheet = pygame.image.load(f"game/assets/images/stairs{ROWS}.png").convert_alpha()
         except Exception:
-            self.sprite_sheet = pygame.image.load("game/assets/stairs6.png").convert_alpha()
+            self.sprite_sheet = pygame.image.load("game/assets/images/stairs6.png").convert_alpha()
 
         self._build_stairs_frames()
         self._load_special_sprites()

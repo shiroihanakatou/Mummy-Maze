@@ -12,7 +12,7 @@ class Cell:
         self.down = 0
         self.left = 0
         self.right = 0
-        self.sprite_sheet = pygame.image.load("game/assets/walls6.png").convert_alpha()
+        self.sprite_sheet = pygame.image.load("game/assets/images/walls6.png").convert_alpha()
 
     def _scale(self, frame):
         factor = CELL_SIZE / 60
@@ -51,7 +51,7 @@ class Player:
         self.direction = "down"
         self.type = "explorer"
 
-        self.sprite_sheet = pygame.image.load(f"game/assets/{self.type}6.png").convert_alpha()
+        self.sprite_sheet = pygame.image.load(f"game/assets/images/{self.type}6.png").convert_alpha()
         sheet_rect = self.sprite_sheet.get_rect()
         self.frame_w = sheet_rect.width // 5
         self.frame_h = sheet_rect.height // 4
@@ -116,6 +116,10 @@ class Player:
         # gate logic:
         # - đi xuống: chặn nếu cell.down in (1 wall, 2 gate đóng)
         # - đi lên: xem down của cell phía trên
+        # Space key = skip turn (stay in place)
+        if key == K_SPACE:
+            return True  # Signal that player took an action (skip turn)
+
         if (key == K_UP or key == K_w) and self.row > 0 and grid[self.row - 1][self.col].down not in (1, 2):
             self.row -= 1
             self.direction = "up"
@@ -224,7 +228,7 @@ class Enemy:
         self.direction = "down"
         self.type = random.choice(["red_mummy", "white_mummy", "red_scorpion"])
 
-        self.sprite_sheet = pygame.image.load(f"game/assets/{self.type}6.png").convert_alpha()
+        self.sprite_sheet = pygame.image.load(f"game/assets/images/{self.type}6.png").convert_alpha()
         sheet_rect = self.sprite_sheet.get_rect()
         self.frame_w = sheet_rect.width // 5
         self.frame_h = sheet_rect.height // 4
