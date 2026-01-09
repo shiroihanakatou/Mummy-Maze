@@ -20,6 +20,13 @@ ORANGE=(255,165,0)
 PINK  = (255,192,203)
 DARKGREEN=(0,100,0)
 
+# Debug logging toggle
+DEBUG_LOGS = False
+
+def debug_log(*args, **kwargs):
+    if DEBUG_LOGS:
+        print(*args, **kwargs)
+
 SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 800
 

@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Optional, Dict, Any
 import urllib.request
 import urllib.error
+from variable import debug_log
 
 FIREBASE_URL = "https://mummy-maze-43e73-default-rtdb.asia-southeast1.firebasedatabase.app"
 
@@ -20,10 +21,24 @@ def generate_guest_id():
     return f"guest_{uuid.uuid4().hex[:8]}"
 
 def serialize_game_state(player, enemies, gamestate, grid, mode: str):
-    """Convert current game state to JSON-serializable dict"""
+    """Convert current game state to JSON-serializable dict.
+    For classic mode, saves map in the same format as level JSON files."""
+    # Determine difficulty string
+    if getattr(gamestate, "impossible_mode", False):
+        diff_str = "impossible"
+    elif gamestate.enemy_count == 1:
+        diff_str = "easy"
+    elif gamestate.enemy_count == 2:
+        diff_str = "medium"
+    else:
+        diff_str = "hard"
+    
+    grid_size = len(grid)
+    
     state = {
-        "difficulty": "easy" if gamestate.enemy_count == 1 else ("medium" if gamestate.enemy_count == 2 else "hard"),
-        "grid_size": len(grid),
+        "difficulty": diff_str,
+        "impossible_mode": getattr(gamestate, "impossible_mode", False),
+        "grid_size": grid_size,
         "chapter": getattr(gamestate, "chapter", 1),
         "level": getattr(gamestate, "level", 1),
         "player": {
@@ -55,29 +70,105 @@ def serialize_game_state(player, enemies, gamestate, grid, mode: str):
         }
     }
     
-    # For classic mode, save map data
+    # For classic mode, save map data in level JSON format
     map_data = None
     if mode == "classic":
-        tiles = []
-        walls_v = []
-        walls_h = []
-        for row in grid:
-            tile_row = []
-            wall_v_row = []
-            wall_h_row = []
-            for cell in row:
-                tile_row.append(cell.down if hasattr(cell, 'down') else 0)
-                wall_v_row.append(cell.left if hasattr(cell, 'left') else 0)
-                wall_h_row.append(cell.down if hasattr(cell, 'down') else 0)
-            tiles.append(tile_row)
-            walls_v.append(wall_v_row)
-            walls_h.append(wall_h_row)
+        try:
+            # Build tiles string (same format as level JSON)
+            tiles = []
+            for r in range(grid_size):
+                row_str = ""
+                for c in range(grid_size):
+                    # Default empty cell
+                    ch = "."
+                    # Check for player
+                    if player.row == r and player.col == c:
+                        ch = "P"
+                    # Check for enemies
+                    for en in enemies:
+                        if en.row == r and en.col == c:
+                            if "white" in getattr(en, "type", ""):
+                                ch = "W"
+                            elif "scorpion" in getattr(en, "type", ""):
+                                ch = "S"
+                            else:
+                                ch = "R"
+                    # Check for key
+                    if (r, c) in getattr(gamestate, "keys", set()):
+                        if ch == ".":
+                            ch = "K"
+                    # Check for trap
+                    if (r, c) in getattr(gamestate, "traps", set()):
+                        if ch == ".":
+                            ch = "T"
+                    # Check for exit
+                    if r == gamestate.goal_row and c == gamestate.goal_col:
+                        if ch == ".":
+                            ch = "E"
+                    row_str += ch
+                tiles.append(row_str)
         
-        map_data = {
-            "tiles": tiles,
-            "walls_v": walls_v,
-            "walls_h": walls_h
-        }
+            # Build walls_v strings (vertical walls between columns)
+            # walls_v has grid_size rows and grid_size+1 columns
+            walls_v = []
+            for r in range(grid_size):
+                row_str = ""
+                for c in range(grid_size + 1):
+                    if c == 0:
+                        # Left border - check if cell has left wall
+                        if grid[r][0].left == 1:
+                            row_str += "|"
+                        else:
+                            row_str += " "
+                    elif c == grid_size:
+                        # Right border - check if last cell has right wall
+                        if grid[r][c-1].right == 1:
+                            row_str += "|"
+                        else:
+                            row_str += " "
+                    else:
+                        # Between cells - check if left cell has right wall or right cell has left wall
+                        if grid[r][c].left == 1:
+                            row_str += "|"
+                        else:
+                            row_str += " "
+                walls_v.append(row_str)
+        
+            # Build walls_h strings (horizontal walls between rows)
+            # walls_h has grid_size+1 rows and grid_size columns
+            walls_h = []
+            for r in range(grid_size + 1):
+                row_str = ""
+                for c in range(grid_size):
+                    if r == 0:
+                        # Top border - check if cell has up wall (always closed)
+                        row_str += "-"
+                    elif r == grid_size:
+                        # Bottom border
+                        row_str += "-"
+                    else:
+                        # Between rows - check cell above's down wall
+                        cell_down = grid[r-1][c].down
+                        if cell_down == 1:
+                            row_str += "-"  # Wall
+                        elif cell_down == 2:
+                            row_str += "="  # Closed gate
+                        elif cell_down == 3:
+                            row_str += "~"  # Open gate
+                        else:
+                            row_str += " "  # No wall
+                walls_h.append(row_str)
+        
+            map_data = {
+                "size": {"rows": grid_size, "cols": grid_size},
+                "tiles": tiles,
+                "walls_v": walls_v,
+                "walls_h": walls_h,
+                "exit": {"row": gamestate.goal_row, "col": gamestate.goal_col}
+            }
+        except Exception as e:
+            debug_log(f"[SAVE] Error building map_data: {e}")
+            map_data = None
     
     # Serialize move history
     move_history = []
@@ -95,6 +186,31 @@ def serialize_game_state(player, enemies, gamestate, grid, mode: str):
             })
     
     return state, map_data, move_history
+
+# New: Separate serializers per mode for clarity and correctness
+def serialize_classic(player, enemies, gamestate, grid):
+    """Serialize classic mode: returns (state, map_data, move_history)."""
+    mode = "classic"
+    state, map_data, move_history = serialize_game_state(player, enemies, gamestate, grid, mode)
+    # Debug log summary
+    try:
+        v_bar = sum(row.count('|') for row in map_data['walls_v']) if map_data else 0
+        h_wall = sum(row.count('-') for row in map_data['walls_h']) if map_data else 0
+        h_gate_closed = sum(row.count('=') for row in map_data['walls_h']) if map_data else 0
+        h_gate_open = sum(row.count('~') for row in map_data['walls_h']) if map_data else 0
+        exit_marks = sum(row.count('E') for row in map_data['tiles']) if map_data else 0
+        debug_log(f"[SAVE][CLASSIC] grid={state.get('grid_size')} tiles={len(map_data['tiles']) if map_data else 0} vbars={v_bar} hwalls={h_wall} gates(closed={h_gate_closed},open={h_gate_open}) exits={exit_marks}")
+    except Exception as e:
+        debug_log(f"[SAVE][CLASSIC] debug summary failed: {e}")
+    return state, map_data, move_history
+
+def serialize_adventure(player, enemies, gamestate, grid):
+    """Serialize adventure mode: returns (state, move_history) without map_data."""
+    mode = "adventure"
+    state, _map_data_unused, move_history = serialize_game_state(player, enemies, gamestate, grid, mode)
+    # Debug log summary
+    debug_log(f"[SAVE][ADVENTURE] grid_size={state.get('grid_size')} chapter={state.get('chapter')} level={state.get('level')} moves={len(move_history)}")
+    return state, move_history
 
 def create_save_data(username: str, password: Optional[str], is_guest: bool, score: int,
                      adventure_state=None, classic_state=None):
@@ -118,7 +234,7 @@ def save_local(username: str, save_data: Dict[str, Any]) -> bool:
             json.dump(save_data, f, indent=2, ensure_ascii=False)
         return True
     except Exception as e:
-        print(f"[SaveLoad] Local save failed: {e}")
+        debug_log(f"[SaveLoad] Local save failed: {e}")
         return False
 
 def load_local(username: str) -> Optional[Dict[str, Any]]:
@@ -130,7 +246,7 @@ def load_local(username: str) -> Optional[Dict[str, Any]]:
         with open(save_path, 'r', encoding='utf-8') as f:
             return json.load(f)
     except Exception as e:
-        print(f"[SaveLoad] Local load failed: {e}")
+        debug_log(f"[SaveLoad] Local load failed: {e}")
         return None
 
 def list_local_saves(limit: int = 5):
@@ -142,7 +258,7 @@ def list_local_saves(limit: int = 5):
         for p in files[:limit]:
             profiles.append(p.stem)
     except Exception as e:
-        print(f"[SaveLoad] list_local_saves failed: {e}")
+        debug_log(f"[SaveLoad] list_local_saves failed: {e}")
     return profiles
 
 def save_firebase(username: str, save_data: Dict[str, Any]) -> bool:
@@ -156,7 +272,7 @@ def save_firebase(username: str, save_data: Dict[str, Any]) -> bool:
         with urllib.request.urlopen(req, timeout=5) as response:
             return response.status == 200
     except Exception as e:
-        print(f"[SaveLoad] Firebase save failed: {e}")
+        debug_log(f"[SaveLoad] Firebase save failed: {e}")
         return False
 
 def load_firebase(username: str) -> Optional[Dict[str, Any]]:
@@ -167,7 +283,7 @@ def load_firebase(username: str) -> Optional[Dict[str, Any]]:
             data = json.loads(response.read().decode('utf-8'))
             return data if data else None
     except Exception as e:
-        print(f"[SaveLoad] Firebase load failed: {e}")
+        debug_log(f"[SaveLoad] Firebase load failed: {e}")
         return None
 
 def get_leaderboard(limit: int = 10) -> list:
@@ -200,7 +316,7 @@ def get_leaderboard(limit: int = 10) -> list:
             return scores[:limit]
             
     except Exception as e:
-        print(f"[SaveLoad] Leaderboard fetch failed: {e}")
+        debug_log(f"[SaveLoad] Leaderboard fetch failed: {e}")
         return []
 
 def calculate_score(difficulty: str, minutes: float, actual_moves: int, solution_len: int) -> int:

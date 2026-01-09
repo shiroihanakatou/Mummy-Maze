@@ -222,6 +222,89 @@ def new_enemy_position(e_row, e_col, p_row, p_col, grid, type):
 
     return new_row, new_col
 
+
+def impossible_mode_move(e_row, e_col, p_row, p_col, grid, enemy_type):
+    """
+    Impossible mode AI: Uses BFS to find actual shortest path to player,
+    accounting for walls. Returns the next cell (nr, nc) to move toward player.
+    """
+    from collections import deque
+    
+    # If already at player position, don't move
+    if e_row == p_row and e_col == p_col:
+        return e_row, e_col
+    
+    rows = len(grid)
+    cols = len(grid[0]) if rows > 0 else 0
+    
+    def _can_move_from(r, c, direction):
+        """Check if can move from (r, c) in given direction."""
+        if direction == "up":
+            if r <= 0:
+                return False
+            # Check wall below the cell above (which blocks us from going up)
+            edge = grid[r - 1][c].down
+            return edge not in (1, 2)
+        elif direction == "down":
+            if r >= rows - 1:
+                return False
+            edge = grid[r][c].down
+            return edge not in (1, 2)
+        elif direction == "left":
+            if c <= 0:
+                return False
+            return grid[r][c].left == 0
+        elif direction == "right":
+            if c >= cols - 1:
+                return False
+            return grid[r][c].right == 0
+        return False
+    
+    # BFS from enemy to player (forward search)
+    # We find the shortest path enemy can walk to reach player
+    queue = deque()
+    queue.append((e_row, e_col))
+    visited = {(e_row, e_col): None}  # Maps position to (parent_position, direction_taken)
+    
+    directions = [("up", -1, 0), ("down", 1, 0), ("left", 0, -1), ("right", 0, 1)]
+    if enemy_type == "white_mummy":
+        directions = [("left", 0, -1), ("right", 0, 1), ("up", -1, 0), ("down", 1, 0)]
+    found = False
+    while queue and not found:
+        cr, cc = queue.popleft()
+        
+        for dname, dr, dc in directions:
+            nr, nc = cr + dr, cc + dc
+            if 0 <= nr < rows and 0 <= nc < cols and (nr, nc) not in visited:
+                # Check if enemy can move FROM (cr, cc) TO (nr, nc)
+                if _can_move_from(cr, cc, dname):
+                    visited[(nr, nc)] = (cr, cc, dname)
+                    if nr == p_row and nc == p_col:
+                        found = True
+                        break
+                    queue.append((nr, nc))
+    
+    # If player position not reachable, fall back to Manhattan-based move
+    if (p_row, p_col) not in visited:
+        return new_enemy_position(e_row, e_col, p_row, p_col, grid, enemy_type)
+    
+    # Backtrack from player to find the first step enemy should take
+    current = (p_row, p_col)
+    first_step = None
+    
+    while visited[current] is not None:
+        parent_r, parent_c, direction = visited[current]
+        if parent_r == e_row and parent_c == e_col:
+            # current is where enemy should move first
+            first_step = current
+            break
+        current = (parent_r, parent_c)
+    
+    if first_step:
+        return first_step
+    return e_row, e_col
+
+
 def winning_check(surface, font, player, gamestate):
     if gamestate.gameover:
         return
@@ -235,7 +318,7 @@ def winning_check(surface, font, player, gamestate):
             try:
                 gamestate.sfx["finishedlevel"].play()
             except Exception as e:
-                print(f"[Sound] finishedlevel play failed: {e}")
+                debug_log(f"[Sound] finishedlevel play failed: {e}")
         
         text = font.render("You Win", True, GREEN)
         surface.blit(
@@ -278,7 +361,7 @@ def losing_check(surface, font, player, enemies, gamestate):
                     try:
                         gamestate.sfx["poison"].play()
                     except Exception as e:
-                        print(f"[Sound] poison play failed: {e}")
+                        debug_log(f"[Sound] poison play failed: {e}")
             elif cause == "red":
                 fight_dur = 0.5  # Match pummel.mp3 (0.50s)
                 # Play pummel sound immediately
@@ -286,14 +369,14 @@ def losing_check(surface, font, player, enemies, gamestate):
                     try:
                         gamestate.sfx["pummel"].play()
                     except Exception as e:
-                        print(f"[Sound] pummel play failed: {e}")
+                        debug_log(f"[Sound] pummel play failed: {e}")
             else:  # white
                 fight_dur = 0.5  # Match pummel.mp3
                 if gamestate.sfx.get("pummel") is not None:
                     try:
                         gamestate.sfx["pummel"].play()
                     except Exception as e:
-                        print(f"[Sound] pummel play failed: {e}")
+                        debug_log(f"[Sound] pummel play failed: {e}")
             
             gamestate.death_state = {
                 "cause": cause,
@@ -332,7 +415,7 @@ class ProgressManager:
             )
             self.img_mapx = pygame.transform.smoothscale(mapx_frames[0], marker_size)
         except Exception as e:
-            print(f"[ProgressManager] mapx mask load failed: {e}")
+            debug_log(f"[ProgressManager] mapx mask load failed: {e}")
             self.img_mapx = pygame.image.load(str(ASSETS_DIR / "images/mapx.gif")).convert_alpha()
             self.img_mapx = pygame.transform.smoothscale(self.img_mapx, marker_size)
         
@@ -345,7 +428,7 @@ class ProgressManager:
             )
             self.img_head = pygame.transform.smoothscale(maphead_frames[0], marker_size)
         except Exception as e:
-            print(f"[ProgressManager] maphead mask load failed: {e}")
+            debug_log(f"[ProgressManager] maphead mask load failed: {e}")
             self.img_head = pygame.image.load(str(ASSETS_DIR / "images/maphead.gif")).convert_alpha()
             self.img_head = pygame.transform.smoothscale(self.img_head, marker_size)
         
@@ -482,8 +565,13 @@ def read_map_json(filepath: str):
     walls_h = data.get("walls_h", [])
     exit_pos = None
 
+    # Handle both old format (rows/cols) and new format (row/col)
     if "exit" in data and data["exit"] is not None:
-        exit_pos = (int(data["exit"]["rows"]), int(data["exit"]["cols"]))
+        exit_info = data["exit"]
+        if "row" in exit_info:
+            exit_pos = (int(exit_info["row"]), int(exit_info["col"]))
+        elif "rows" in exit_info:
+            exit_pos = (int(exit_info["rows"]), int(exit_info["cols"]))
 
     return rows, cols, tiles, walls_v, walls_h, exit_pos
 
@@ -598,13 +686,14 @@ def apply_map_to_grid(rows, cols, tiles, walls_v, walls_h, grid, player, enemies
         pass  # print(f"[Adventure] WARNING: No solution found for this level!")
         gamestate.solution = []
 
-def path_finding(player, enemy, grid, gamestate):
+def path_finding(player, enemy, grid, gamestate, impossible_mode=False):
     """BFS over (player, enemies, gate_state).
 
     - Supports multiple enemies (ordered as provided)
     - Enemies move after player each turn (2 steps unless red_scorpion)
     - Gate open/closed state included in visited key
     - Avoids traps and player/enemy deaths
+    - impossible_mode: if True, enemies use BFS shortest path instead of Manhattan
     """
 
     directions = [("up", -1, 0), ("down", 1, 0), ("left", 0, -1), ("right", 0, 1)]
@@ -653,7 +742,8 @@ def path_finding(player, enemy, grid, gamestate):
     prev = {}
     q = deque([start])
     iterations = 0
-    max_iterations = 100000  # Prevent infinite loops
+    # Higher limit for impossible mode with more enemies
+    max_iterations = 500000 if impossible_mode else 100000
 
     def gate_is_open(rh, c, gate_state_tuple):
         if (rh, c) not in gate_index:
@@ -691,7 +781,8 @@ def path_finding(player, enemy, grid, gamestate):
             return (pr, pc + 1)
         return None
 
-    def enemy_best_step(er, ec, tcode, pr, pc, gate_state_tuple):
+    def enemy_best_step_manhattan(er, ec, tcode, pr, pc, gate_state_tuple):
+        """Manhattan distance based enemy movement (normal mode)."""
         dirs = [("up", -1, 0), ("down", 1, 0), ("left", 0, -1), ("right", 0, 1)]
         if tcode == "W":
             dirs = [("left", 0, -1), ("right", 0, 1), ("up", -1, 0), ("down", 1, 0)]
@@ -709,6 +800,72 @@ def path_finding(player, enemy, grid, gamestate):
                 best_dist = dist
                 best_r, best_c = tr, tc
         return best_r, best_c
+
+    def enemy_best_step_bfs(er, ec, tcode, pr, pc, gate_state_tuple):
+        """BFS-based enemy movement for impossible mode (true shortest path)."""
+        from collections import deque as bfs_deque
+        
+        if er == pr and ec == pc:
+            return er, ec
+        
+        rows = ROWS
+        cols = COLS
+        
+        # BFS from enemy to player (forward search)
+        # Find the shortest walkable path from enemy to player
+        bfs_q = bfs_deque()
+        bfs_q.append((er, ec))
+        bfs_visited = {(er, ec): None}  # Maps position to parent position
+        
+        # Use same direction priority as actual enemy movement
+        if tcode == "W":  # White mummy prioritizes horizontal
+            bfs_dirs = [("left", 0, -1), ("right", 0, 1), ("up", -1, 0), ("down", 1, 0)]
+        else:
+            bfs_dirs = [("up", -1, 0), ("down", 1, 0), ("left", 0, -1), ("right", 0, 1)]
+        
+        found = False
+        while bfs_q and not found:
+            cr, cc = bfs_q.popleft()
+            
+            for dname, dr, dc in bfs_dirs:
+                # Check if can move from (cr, cc) in this direction
+                target = can_move(cr, cc, dname, gate_state_tuple)
+                if target is None:
+                    continue
+                nr, nc = target
+                if (nr, nc) not in bfs_visited:
+                    bfs_visited[(nr, nc)] = (cr, cc)
+                    if nr == pr and nc == pc:
+                        found = True
+                        break
+                    bfs_q.append((nr, nc))
+        
+        # If player position not reachable, fall back to Manhattan
+        if (pr, pc) not in bfs_visited:
+            return enemy_best_step_manhattan(er, ec, tcode, pr, pc, gate_state_tuple)
+        
+        # Backtrack from player to find the first step enemy should take
+        current = (pr, pc)
+        first_step = None
+        
+        while bfs_visited[current] is not None:
+            parent = bfs_visited[current]
+            if parent == (er, ec):
+                # current is where enemy should move first
+                first_step = current
+                break
+            current = parent
+        
+        if first_step:
+            return first_step
+        return er, ec
+
+    def enemy_best_step(er, ec, tcode, pr, pc, gate_state_tuple):
+        """Choose movement strategy based on impossible_mode flag."""
+        if impossible_mode:
+            return enemy_best_step_bfs(er, ec, tcode, pr, pc, gate_state_tuple)
+        else:
+            return enemy_best_step_manhattan(er, ec, tcode, pr, pc, gate_state_tuple)
 
     while q:
         iterations += 1
@@ -810,7 +967,8 @@ def path_finding(player, enemy, grid, gamestate):
 
 def is_playable(player, enemy, grid, gamestate):
     """Check solvability; enemy can be a single enemy or list of enemies."""
-    path = path_finding(player, enemy, grid, gamestate)
+    impossible_mode = getattr(gamestate, "impossible_mode", False)
+    path = path_finding(player, enemy, grid, gamestate, impossible_mode)
     if path is None:
         # print("[BFS] No solution found")
         return False
@@ -908,9 +1066,19 @@ def generate_game(grid, player, enemies, gamestate):
             if (gamestate.goal_row, gamestate.goal_col) not in taken:
                 break
 
-        for e in enemies:
-            e.type = random.choice(["red_mummy", "white_mummy", "red_scorpion"])
-            add_sprite_frames(e)
+        # Set enemy types based on mode
+        if getattr(gamestate, "impossible_mode", False) and len(enemies) >= 5:
+            # Impossible mode: 2 scorpions + 3 random mummies
+            enemies[0].type = "red_scorpion"
+            enemies[1].type = "red_scorpion"
+            for e in enemies[2:]:
+                e.type = random.choice(["red_mummy", "white_mummy"])
+            for e in enemies:
+                add_sprite_frames(e)
+        else:
+            for e in enemies:
+                e.type = random.choice(["red_mummy", "white_mummy", "red_scorpion"])
+                add_sprite_frames(e)
 
         generate_walls(grid, random.randint(ROWS * COLS // 4, ROWS * COLS))
         
@@ -952,8 +1120,8 @@ def generate_walls(grid, num_walls):
     for _ in range(num_walls):
         no_wall = True
         while no_wall:
-            r = random.randint(1, ROWS - 1)
-            c = random.randint(1, COLS - 1)
+            r = random.randint(0, ROWS - 1)
+            c = random.randint(0, COLS - 1)
             d = random.choice(directions)
             if 0 <= r + d[2] < ROWS and 0 <= c + d[3] < COLS and not getattr(grid[r][c], d[0]):
                 setattr(grid[r][c], d[0], 1)
@@ -1023,14 +1191,34 @@ def generate_random_items(grid, player, enemies, gamestate, taken_positions):
         if num_gates > 0:
             gate_positions = random.sample(valid_gate_positions, num_gates)
             for gr, gc in gate_positions:
-                gamestate.gates_h[(gr, gc)] = random.choice([True, False])  # Random open/closed
-                # print(f"[Generate] Gate at ({gr}, {gc}) - {'open' if gamestate.gates_h[(gr, gc)] else 'closed'}")
+                is_open = random.choice([True, False])
+                gamestate.gates_h[(gr, gc)] = is_open
+                # Sync grid cell with gate state
+                if 0 <= gr - 1 < ROWS and 0 <= gc < COLS:
+                    grid[gr - 1][gc].down = 3 if is_open else 2
+                # Initialize gate animation state
+                gamestate.gate_anim_state[(gr, gc)] = {
+                    "frame": 7 if is_open else 0,
+                    "time": 0.0,
+                    "is_closing": not is_open
+                }
+                # print(f"[Generate] Gate at ({gr}, {gc}) - {'open' if is_open else 'closed'}")
         else:
             # print("[Generate] WARNING: No valid gate positions found! Placing gates anyway...")
             # Fallback: place at least 1 gate even if in non-ideal position
             if valid_gate_positions:
                 gr, gc = random.choice(valid_gate_positions)
-                gamestate.gates_h[(gr, gc)] = random.choice([True, False])
+                is_open = random.choice([True, False])
+                gamestate.gates_h[(gr, gc)] = is_open
+                # Sync grid cell with gate state
+                if 0 <= gr - 1 < ROWS and 0 <= gc < COLS:
+                    grid[gr - 1][gc].down = 3 if is_open else 2
+                # Initialize gate animation state
+                gamestate.gate_anim_state[(gr, gc)] = {
+                    "frame": 7 if is_open else 0,
+                    "time": 0.0,
+                    "is_closing": not is_open
+                }
     
     # Place traps (avoid occupied cells and key cells)
     if random.random() < trap_prob and len(available_cells) > 0:
@@ -1239,7 +1427,7 @@ def toggle_gates(grid, gamestate):
         try:
             gamestate.sfx["gate"].play()
         except Exception as e:
-            print(f"[Sound] gate play failed: {e}")
+            debug_log(f"[Sound] gate play failed: {e}")
 
 
 # ===== Phase 4: Death animations =====
@@ -1259,7 +1447,7 @@ def start_trap_death(player, gamestate):
             try:
                 gamestate.sfx["block"].play()
             except Exception as e:
-                print(f"[Sound] block play failed: {e}")
+                debug_log(f"[Sound] block play failed: {e}")
         gamestate.death_state = {
             "cause": "block",
             "row": player.row,
@@ -1285,7 +1473,7 @@ def start_trap_death(player, gamestate):
             try:
                 gamestate.sfx["pit"].play()
             except Exception as e:
-                print(f"[Sound] pit play failed: {e}")
+                debug_log(f"[Sound] pit play failed: {e}")
         gamestate.death_state = {
             "cause": "trap",
             "row": player.row,

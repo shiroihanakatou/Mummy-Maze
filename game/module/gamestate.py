@@ -57,6 +57,7 @@ class Gamestate:
         self.initpos = None
         self.pending_snapshot = False
         self.enemy_count = 1
+        self.impossible_mode = False  # Use BFS pathfinding instead of Manhattan distance
 
         self.solution = []
         self.goal_row = ROWS - 1
@@ -86,7 +87,7 @@ class Gamestate:
             self.key_anim_timer = 0.0
             # print("[Gamestate] Key sprite loaded with mask (36 frames)")
         except Exception as e:
-            print(f"[Gamestate] Key sprite load failed: {e}")
+            debug_log(f"[Gamestate] Key sprite load failed: {e}")
             self.key_frames = None
 
         try:
@@ -96,7 +97,7 @@ class Gamestate:
             self.gate_anim_state = {}  # {(r, c): {"frame": idx, "time": t, "is_closing": bool}}
             # print("[Gamestate] Gate sprite loaded (8 frames)")
         except Exception as e:
-            print(f"[Gamestate] Gate sprite load failed: {e}")
+            debug_log(f"[Gamestate] Gate sprite load failed: {e}")
             self.gate_frames = None
 
         try:
@@ -108,7 +109,7 @@ class Gamestate:
             )
             # print("[Gamestate] Trap sprite loaded with mask (1 frame)")
         except Exception as e:
-            print(f"[Gamestate] Trap sprite load failed: {e}")
+            debug_log(f"[Gamestate] Trap sprite load failed: {e}")
             self.trap_frames = None
 
         # Phase 4: death assets
@@ -120,7 +121,7 @@ class Gamestate:
             )
             # print("[Gamestate] Expfall sprite loaded (4 frames)")
         except Exception as e:
-            print(f"[Gamestate] Expfall sprite load failed: {e}")
+            debug_log(f"[Gamestate] Expfall sprite load failed: {e}")
             self.expfall_frames = None
 
         try:
@@ -132,7 +133,7 @@ class Gamestate:
             )
             # print("[Gamestate] Floor dark loaded")
         except Exception as e:
-            print(f"[Gamestate] Floor dark load failed: {e}")
+            debug_log(f"[Gamestate] Floor dark load failed: {e}")
             self.floor_dark_frames = None
 
         try:
@@ -143,7 +144,7 @@ class Gamestate:
             )
             # print("[Gamestate] Dust sprite loaded (32 frames)")
         except Exception as e:
-            print(f"[Gamestate] Dust sprite load failed: {e}")
+            debug_log(f"[Gamestate] Dust sprite load failed: {e}")
             self.dust_frames = None
 
         # Block trap + player freakout (new death type)
@@ -153,7 +154,7 @@ class Gamestate:
             self.block_frames = slice_sheet(block_sheet, 16)
             # print("[Gamestate] Block sprite loaded (10 frames)")
         except Exception as e:
-            print(f"[Gamestate] Block sprite load failed: {e}")
+            debug_log(f"[Gamestate] Block sprite load failed: {e}")
             self.block_frames = None
 
         try:
@@ -164,7 +165,7 @@ class Gamestate:
             )
             # print("[Gamestate] Freakout sprite loaded (16 frames)")
         except Exception as e:
-            print(f"[Gamestate] Freakout sprite load failed: {e}")
+            debug_log(f"[Gamestate] Freakout sprite load failed: {e}")
             self.freakout_frames = None
 
         try:
@@ -185,7 +186,7 @@ class Gamestate:
             )
             # print("[Gamestate] Fight sprites loaded")
         except Exception as e:
-            print(f"[Gamestate] Fight sprite load failed: {e}")
+            debug_log(f"[Gamestate] Fight sprite load failed: {e}")
             self.red_fight_frames = self.white_fight_frames = self.stung_frames = None
 
         # Phase 5: Sound effects

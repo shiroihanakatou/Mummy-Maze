@@ -473,6 +473,12 @@ class LeaderboardScreen:
             "back_btn": back_btn
         }
 
+    def _calculate_button_rects(self, screen_width, screen_height):
+        """Calculate back button rect without drawing - for event handling."""
+        center_x = screen_width // 2
+        back_btn = pygame.Rect(center_x - 70, screen_height - 130, 140, 50)
+        return {"back_btn": back_btn}
+
 class GuestLoadScreen:
     """Handles guest profile selection"""
     

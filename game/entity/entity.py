@@ -1,7 +1,7 @@
 import pygame, sys, random
 from pygame.locals import *
 from variable import *
-from module import new_enemy_position, add_sprite_frames
+from module import new_enemy_position, add_sprite_frames, impossible_mode_move
 
 
 class Cell:
@@ -299,7 +299,7 @@ class Enemy:
 
         self.play_animation("move", speed=self.base_move_frame_time, loop=False, reset=True)
 
-    def move(self, player, grid):
+    def move(self, player, grid, gamestate=None):
         if self.is_moving or self.pending_steps:
             return 0
 
@@ -308,8 +308,14 @@ class Enemy:
         temp_r, temp_c = self.row, self.col
         planned = []
 
+        # Check if impossible mode is enabled
+        use_impossible = gamestate and getattr(gamestate, "impossible_mode", False)
+
         for _ in range(steps):
-            nr, nc = new_enemy_position(temp_r, temp_c, player.row, player.col, grid, self.type)
+            if use_impossible:
+                nr, nc = impossible_mode_move(temp_r, temp_c, player.row, player.col, grid, self.type)
+            else:
+                nr, nc = new_enemy_position(temp_r, temp_c, player.row, player.col, grid, self.type)
             if nr == temp_r and nc == temp_c:
                 break
 
