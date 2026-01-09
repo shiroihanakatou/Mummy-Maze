@@ -195,13 +195,30 @@ class Undobutton:
         if len(gamestate.storedmove) < 2:
             return
 
-        # bỏ state hiện tại
-        gamestate.storedmove.pop()
+        # DEBUG: Print snapshot info before undo
+        print(f"[UNDO] storedmove count: {len(gamestate.storedmove)}")
+        for i, snap in enumerate(gamestate.storedmove):
+            enemies_state = snap[3] if len(snap) > 3 else []
+            killed_state = snap[6] if len(snap) > 6 else []
+            print(f"  Snapshot {i}: enemies={len(enemies_state)}, killed={len(killed_state)}")
 
-        # apply state trước đó
+        # Pop current snapshot - this contains killed_this_turn (enemies killed in this turn)
+        current = gamestate.storedmove.pop()
+        
+        # Get killed enemies from the current snapshot (the turn we're undoing)
+        killed_this_turn = current[6] if len(current) > 6 else ()
+        
+        # Get the previous snapshot (positions BEFORE this turn)
         prev = gamestate.storedmove[-1]
+        prev_enemies = prev[3] if len(prev) > 3 else []
+        
+        print(f"[UNDO] Restoring: prev has {len(prev_enemies)} enemies, + {len(killed_this_turn)} killed this turn")
+        
+        # The previous snapshot's enemies_state contains all enemies at start of this turn
+        # We just need to apply the previous snapshot directly - it already has all enemies
         enemies_ref = enemy if isinstance(enemy, list) else _iter_enemies(enemy)
         apply_snapshot(prev, player, enemies_ref, grid, gamestate)
+        
         gamestate.gameover = False
         gamestate.result = None
         

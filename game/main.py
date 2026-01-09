@@ -494,6 +494,7 @@ def run_game():
         # Clear all old enemies and their states
         enemies.clear()
         killed_uids.clear()
+        killed_this_turn.clear()
         collision_fx.clear()
         
         # Reset turn state to player's turn
@@ -562,6 +563,7 @@ def run_game():
         # Clear all old enemies and their states
         enemies.clear()
         killed_uids.clear()
+        killed_this_turn.clear()
         collision_fx.clear()
         
         # Reset turn state to player's turn
@@ -755,6 +757,7 @@ def run_game():
     # Rule: If an enemy moves into a tile occupied by another enemy that is standing still,
     # then the standing enemy dies. The moving enemy survives.
     killed_uids: set[int] = set()
+    killed_this_turn: list[tuple] = []  # Stores (row, col, direction, type) of enemies killed this turn
     collision_fx: list[dict] = []  # dust effects for enemy-enemy collision
 
     def _ensure_enemy_hooks():
@@ -794,6 +797,10 @@ def run_game():
                 # Check: same tile AND not moving AND no pending steps
                 if (other.row == mr and other.col == mc) and (not other.is_moving) and (not getattr(other, "pending_steps", [])):
                     killed_uids.add(other.uid)
+                    # Save the killed enemy's state for undo to restore
+                    enemy_state = (other.row, other.col, getattr(other, "direction", "down"), getattr(other, "type", None))
+                    killed_this_turn.append(enemy_state)
+                    print(f"[COLLISION] Enemy {other.uid} ({other.type}) killed! killed_this_turn now has {len(killed_this_turn)} entries: {killed_this_turn}")
                     # Play a collision sound when an enemy kills another (avoid block.wav)
                     hit_snd = gamestate.sfx.get("mummyhowl")
                     if hit_snd:
@@ -809,7 +816,6 @@ def run_game():
                         "timer": 0.0,
                         "duration": 0.6,
                     })
-                    # print(f"[Collision] Enemy {other.uid} ({other.type}) killed by Enemy {mover.uid}")
                     break
 
         # Ensure all enemies have the collision callback
@@ -822,6 +828,9 @@ def run_game():
         if player.is_moving:
             return False
         for e in enemies:
+            # Skip dead enemies
+            if e.uid in killed_uids:
+                continue
             if e.is_moving:
                 return False
             if getattr(e, "pending_steps", []):
@@ -1409,6 +1418,8 @@ def run_game():
                             try:
                                 gamestate.sfx["click"].play()
                             except: pass
+                        # Save adventure progress before going back
+                        _perform_save(gamestate.mode)
                         gamestate.state = "SELECTION"
                         gamestate.mode = "classic"
                         gamestate.gameover = False
@@ -1420,6 +1431,8 @@ def run_game():
                             try:
                                 gamestate.sfx["click"].play()
                             except: pass
+                        # Save progress before going back
+                        _perform_save(gamestate.mode)
                         gamestate.state = "SELECTION"
                         gamestate.mode = "classic"
                         gamestate.gameover = False
@@ -1440,22 +1453,12 @@ def run_game():
                         loading_state["start_time"] = pygame.time.get_ticks() / 1000.0
                         # Will generate in update loop
                         killed_uids.clear()
+                        killed_this_turn.clear()
                         collision_fx.clear()
                         current_turn = "player"
                         enemy_turn_idx = 0
                         gamestate.state = "PLAYING"
                         gamestate.gameover = False
-                    elif win_back_button.is_clicked(mouse_pos):
-                        if gamestate.sfx.get("click") is not None:
-                            try:
-                                gamestate.sfx["click"].play()
-                            except: pass
-                        if not user_session.get("is_guest"):
-                            _show_save_dialog(gamestate.mode, "SELECTION")
-                        else:
-                            gamestate.state = "SELECTION"
-                            gamestate.mode = "classic"
-                            gamestate.gameover = False
 
             elif gamestate.state == "PLAYING":
                 if e.type == MOUSEBUTTONDOWN and options_button.is_clicked(e):
@@ -1547,8 +1550,13 @@ def run_game():
                                 gamestate.sfx["click"].play()
                             except: pass
                         undobutton.undo_move(e, player, enemies, gamestate, grid)
-                        killed_uids.clear()  # Respawn all dead enemies on undo
-                        collision_fx.clear()  # Clear collision effects
+                        # Clear killed_uids to ensure restored enemies aren't filtered out
+                        killed_uids.clear()
+                        killed_this_turn.clear()
+                        collision_fx.clear()
+                        # Reset turn to player's turn after undo
+                        current_turn = "player"
+                        enemy_turn_idx = 0
                     # Check restart button
                     elif restartbutton.is_clicked(e.pos):
                         if gamestate.sfx.get("click") is not None:
@@ -1557,6 +1565,7 @@ def run_game():
                             except: pass
                         restartbutton.restart_game(e, player, enemies, gamestate, grid)
                         killed_uids.clear()  # Respawn all dead enemies
+                        killed_this_turn.clear()
                         collision_fx.clear()  # Clear collision effects
                         current_turn = "player"
                         enemy_turn_idx = 0
@@ -1619,6 +1628,7 @@ def run_game():
                         else:
                             restartbutton.restart_game(e, player, enemies, gamestate, grid)
                         killed_uids.clear()
+                        killed_this_turn.clear()
                         collision_fx.clear()
                         current_turn = "player"
                         enemy_turn_idx = 0
@@ -1638,6 +1648,7 @@ def run_game():
                                 pass  # print(f"[Click] Undo sound error: {ex}")
                         undobutton.undo_move(e, player, enemies, gamestate, grid)
                         killed_uids.clear()
+                        killed_this_turn.clear()
                         collision_fx.clear()
                         menu_y = SCREEN_HEIGHT
                         current_turn = "player"
@@ -1668,6 +1679,7 @@ def run_game():
                             current_turn = "player"
                             enemy_turn_idx = 0
                             killed_uids.clear()  # Reset dead enemies
+                            killed_this_turn.clear()
                             collision_fx.clear()  # Clear collision effects
                             gamestate.state = "AUTOPLAY"
                             gamestate.gameover = False
@@ -1701,11 +1713,9 @@ def run_game():
                         gamestate.gameover = False
 
                     if btn_back_map.is_clicked(mouse_pos):
+                        # Save adventure progress before going back to menu
+                        _perform_save(gamestate.mode)
                         gamestate.state = "SELECTION"
-                        
-                    if btn_save_quit_map.is_clicked(mouse_pos):
-                        pygame.quit()
-                        sys.exit()
 
         # ===== Track state transitions for level initialization =====
         if gamestate.state != previous_state:
@@ -1721,7 +1731,7 @@ def run_game():
 
             # If a trap death requested an immediate snapshot, do it now
             if getattr(gamestate, "_force_snapshot_now", False):
-                gamestate.storedmove.append(make_snapshot(player, enemies, gamestate))
+                gamestate.storedmove.append(make_snapshot(player, enemies, gamestate, killed_this_turn, killed_uids))
                 try:
                     delattr(gamestate, "_force_snapshot_now")
                 except Exception:
@@ -1738,28 +1748,42 @@ def run_game():
                 # All previous actors idle, execute current enemy turn
                 if current_turn < len(enemies):
                     en = enemies[current_turn]
-                    en.move(player, grid, gamestate)
-                    # Check collision after this enemy moves
-                    if gamestate.state != "DEATH_ANIM":
-                        losing_check(None, None, player, enemies, gamestate)
-                    # Remove dead enemies immediately so their anim stops
-                    if killed_uids:
-                        enemies[:] = [e for e in enemies if e.uid not in killed_uids]
-                        killed_uids.clear()
-                        # If we removed the current slot or beyond, clamp turn index
-                        if current_turn >= len(enemies):
-                            current_turn = len(enemies)
-                    # Move to next enemy or back to player
-                    current_turn += 1
+                    # Skip dead enemies during turn processing
+                    if en.uid in killed_uids:
+                        print(f"[TURN] Skipping dead enemy {current_turn} (uid={en.uid})")
+                        current_turn += 1
+                    else:
+                        print(f"[TURN] Enemy {current_turn} ({en.type}) moving...")
+                        en.move(player, grid, gamestate)
+                        # Check collision after this enemy moves
+                        if gamestate.state != "DEATH_ANIM":
+                            losing_check(None, None, player, enemies, gamestate)
+                        # Move to next enemy or back to player
+                        current_turn += 1
                 else:
                     # All enemies done, wait for all animations to finish then back to player
                     if _actors_idle():
+                        print(f"[TURN] All enemies done, back to player")
                         current_turn = "player"
 
-            # apply enemy-vs-enemy kills after updates
-            if killed_uids:
-                enemies[:] = [en for en in enemies if en.uid not in killed_uids]
-                killed_uids.clear()
+            # Append snapshot when turn fully settled - only when it's player's turn again
+            # This ensures all enemies have moved before we snapshot
+            if getattr(gamestate, "pending_snapshot", False) and current_turn == "player" and _actors_idle():
+                snapshot = make_snapshot(player, enemies, gamestate, killed_this_turn, killed_uids)
+                gamestate.storedmove.append(snapshot)
+                gamestate.pending_snapshot = False
+                
+                # DEBUG: Print snapshot info
+                enemies_in_snap = snapshot[3] if len(snapshot) > 3 else []
+                killed_in_snap = snapshot[6] if len(snapshot) > 6 else []
+                print(f"[SNAPSHOT] Added snapshot #{len(gamestate.storedmove)}: player=({snapshot[0]},{snapshot[1]}), enemies={len(enemies_in_snap)}, killed_this_turn={len(killed_in_snap)}")
+                print(f"  killed_uids={killed_uids}, killed_this_turn={killed_this_turn}")
+
+                # Remove dead enemies from list AFTER taking snapshot (only when turn is complete)
+                if killed_uids:
+                    enemies[:] = [en for en in enemies if en.uid not in killed_uids]
+                    killed_uids.clear()
+                    killed_this_turn.clear()
 
             # Update enemy-enemy collision dust effects
             if gamestate.dust_frames:
@@ -1774,11 +1798,6 @@ def run_game():
                     if fx["timer"] < fx.get("duration", 0.6):
                         alive_fx.append(fx)
                 collision_fx[:] = alive_fx
-
-            # append snapshot when turn fully settled
-            if getattr(gamestate, "pending_snapshot", False) and _actors_idle():
-                gamestate.storedmove.append(make_snapshot(player, enemies, gamestate))
-                gamestate.pending_snapshot = False
 
         elif gamestate.state == "DEATH_ANIM":
             finished = update_death_anim(dt, gamestate)
@@ -1796,6 +1815,8 @@ def run_game():
             if win_anim_state["progress"] >= 1.0:
                 win_anim_state["progress"] = 1.0
                 win_anim_state["active"] = False
+                # Save progress when level is completed
+                _perform_save(gamestate.mode)
                 # Transition to win screen
                 gamestate.state = win_anim_state["pending_state"]
 
@@ -1882,6 +1903,7 @@ def run_game():
                         if gamestate.initpos:
                             apply_snapshot(gamestate.initpos, player, enemies, grid, gamestate)
                         killed_uids.clear()
+                        killed_this_turn.clear()
                         collision_fx.clear()
                         current_turn = "player"
                         enemy_turn_idx = 0
@@ -1892,6 +1914,7 @@ def run_game():
             if killed_uids:
                 enemies[:] = [en for en in enemies if en.uid not in killed_uids]
                 killed_uids.clear()
+                killed_this_turn.clear()
 
             # Update enemy-enemy collision dust effects
             if gamestate.dust_frames:
@@ -1916,6 +1939,7 @@ def run_game():
                 if gamestate.initpos:
                     apply_snapshot(gamestate.initpos, player, enemies, grid, gamestate)
                 killed_uids.clear()
+                killed_this_turn.clear()
                 collision_fx.clear()
                 current_turn = "player"
                 enemy_turn_idx = 0
@@ -2112,7 +2136,6 @@ def run_game():
             render_score(surface, user_session.get("score", 0), (OFFSET_X_1 + (SCREEN_WIDTH - OFFSET_X_1) // 2, SCREEN_HEIGHT // 2), scale=1.4)
             
             win_newgame_button.draw(surface, mouse_pos)
-            win_back_button.draw(surface, mouse_pos)
         
         elif gamestate.state == "AUTOPLAY_COMPLETE":
             # Show completion screen with same background as NEXTLEVEL
@@ -2338,6 +2361,7 @@ def run_game():
                     # Perform the actual generation
                     newgamebutton.newgame_game(None, grid, player, enemies, gamestate)
                     killed_uids.clear()
+                    killed_this_turn.clear()
                     collision_fx.clear()
                     # Mark as complete
                     loading_state["progress"] = 1.0
@@ -2540,7 +2564,6 @@ def run_game():
         elif gamestate.state == "WORLD_MAP":
             world_map.draw(surface, progress_mgr, mouse_pos)
             btn_back_map.draw(surface, mouse_pos)
-            btn_save_quit_map.draw(surface, mouse_pos)
 
         elif gamestate.state == "OPTIONS":
             surface.blit(options_panel_bg, (SCREEN_WIDTH // 4, SCREEN_HEIGHT // 4))

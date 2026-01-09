@@ -150,11 +150,11 @@ class Player:
         return moving
 
     def update(self, dt):
-        # idle trigger
-        if (not self.is_moving) and (not self.animation_container):
-            self.inactive_timer += dt
-            if self.inactive_timer >= self.idle_delay:
-                self.play_animation("idle", speed=0.14, loop=True, reset=True)
+        # idle trigger (disabled)
+        # if (not self.is_moving) and (not self.animation_container):
+        #     self.inactive_timer += dt
+        #     if self.inactive_timer >= self.idle_delay:
+        #         self.play_animation("idle", speed=0.14, loop=True, reset=True)
 
         if not self.animation_container:
             return

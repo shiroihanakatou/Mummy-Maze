@@ -34,16 +34,30 @@ def wait(seconds):
         pygame.display.update()
         FramePerSec.tick(FPS)
 
-def make_snapshot(player, enemies, gamestate=None):
-    """Snapshot cho undo/restart: (p_row, p_col, p_dir, enemies_state_tuple, keys, gates_h)."""
-    enemies_state = tuple(
-        (e.row, e.col, getattr(e, "direction", "down"), getattr(e, "type", None))
-        for e in enemies
-    )
+def make_snapshot(player, enemies, gamestate=None, killed_this_turn=None, killed_uids=None):
+    """Snapshot cho undo/restart: (p_row, p_col, p_dir, enemies_state_tuple, keys, gates_h, killed_this_turn).
+    
+    killed_this_turn: list of (row, col, direction, type) for enemies killed THIS turn
+    killed_uids: set of UIDs of killed enemies to exclude from enemies_state
+    """
+    # Only capture ALIVE enemies (not in killed_uids)
+    if killed_uids:
+        enemies_state = tuple(
+            (e.row, e.col, getattr(e, "direction", "down"), getattr(e, "type", None))
+            for e in enemies if e.uid not in killed_uids
+        )
+    else:
+        enemies_state = tuple(
+            (e.row, e.col, getattr(e, "direction", "down"), getattr(e, "type", None))
+            for e in enemies
+        )
     
     # Phase 3: Include keys and gate states in snapshot
     keys_state = set(gamestate.keys) if gamestate else set()
     gates_state = dict(gamestate.gates_h) if gamestate else {}
+    
+    # Store killed enemies this turn so undo can restore them
+    killed_state = tuple(killed_this_turn) if killed_this_turn else ()
     
     return (
         player.row, 
@@ -51,18 +65,23 @@ def make_snapshot(player, enemies, gamestate=None):
         getattr(player, "direction", "down"), 
         enemies_state,
         keys_state,
-        gates_state
+        gates_state,
+        killed_state
     )
 
 def apply_snapshot(snapshot, player, enemies, grid=None, gamestate=None):
     """Apply snapshot và rebuild enemies list nếu cần."""
-    # Support old format (4 items) and new format (6 items)
+    # Support old format (4 items), 6-item format, and new 7-item format with killed_this_turn
     if len(snapshot) == 4:
         p_row, p_col, p_dir, enemies_state = snapshot
         keys_state = None
         gates_state = None
-    else:
+    elif len(snapshot) == 6:
         p_row, p_col, p_dir, enemies_state, keys_state, gates_state = snapshot
+    else:
+        # 7-item format - killed_state is stored but not auto-applied here
+        # (undo_move handles combining killed enemies manually)
+        p_row, p_col, p_dir, enemies_state, keys_state, gates_state, _ = snapshot
     
     player.row, player.col, player.direction = p_row, p_col, p_dir
     # Reset player animation states
