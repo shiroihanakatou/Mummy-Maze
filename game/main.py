@@ -234,9 +234,9 @@ def run_game():
     continue_button = TextButton("Continue Last Game", (SCREEN_WIDTH * 3 // 4, 720), menu_font, idle_color=(0, 100, 0), hover_color=(0, 200, 0))
 
     # Login and Leaderboard screens
-    login_screen = LoginScreen()
-    leaderboard_screen = LeaderboardScreen()
-    register_screen = RegisterScreen()
+    login_screen = LoginScreen(SCREEN_WIDTH,SCREEN_HEIGHT)
+    leaderboard_screen = LeaderboardScreen(SCREEN_WIDTH,SCREEN_HEIGHT)
+    register_screen = RegisterScreen(SCREEN_WIDTH,SCREEN_HEIGHT)
     guest_load_screen = GuestLoadScreen()
     guest_profile_buttons: list[TextButton] = []
 
@@ -1126,7 +1126,7 @@ def run_game():
                     
                     # Mouse clicks for buttons
                     if e.type == pygame.MOUSEBUTTONDOWN:
-                        button_rects = login_screen._calculate_button_rects(SCREEN_WIDTH, SCREEN_HEIGHT)
+                        button_rects = login_screen.draw(surface, SCREEN_WIDTH, SCREEN_HEIGHT, mouse_pos)
                         
                         # Login button
                         if button_rects["login_btn"].collidepoint(mouse_pos):
@@ -1159,10 +1159,9 @@ def run_game():
                             gamestate.state = "GUEST_LOAD"
 
                         # Load Local Save (guest)
-                        elif button_rects.get("load_guest_btn") and button_rects["load_guest_btn"].collidepoint(mouse_pos):
-                            user_session["is_guest"] = True
-                            _refresh_guest_profiles()
-                            gamestate.state = "GUEST_LOAD"
+                        elif button_rects.get("exit_btn") and button_rects["exit_btn"].collidepoint(mouse_pos):
+                            pygame.quit()
+                            sys.exit()
 
             elif gamestate.state == "REGISTER":
                 if e.type == pygame.KEYDOWN or e.type == pygame.MOUSEBUTTONDOWN:
@@ -1200,7 +1199,7 @@ def run_game():
                     
                     # Mouse clicks for buttons
                     if e.type == pygame.MOUSEBUTTONDOWN:
-                        button_rects = register_screen._calculate_button_rects(SCREEN_WIDTH, SCREEN_HEIGHT)
+                        button_rects = register_screen.draw(surface, SCREEN_WIDTH, SCREEN_HEIGHT, mouse_pos)
                         
                         # Register button
                         if button_rects["register_btn"].collidepoint(mouse_pos):
@@ -1244,7 +1243,7 @@ def run_game():
                         gamestate.state = "SELECTION"
                     # Mouse click: check back button rect
                     if e.type == pygame.MOUSEBUTTONDOWN:
-                        rects = leaderboard_screen._calculate_button_rects(SCREEN_WIDTH, SCREEN_HEIGHT)
+                        rects = leaderboard_screen.draw(surface,SCREEN_WIDTH, SCREEN_HEIGHT, mouse_pos)
                         if rects.get("back_btn") and rects["back_btn"].collidepoint(mouse_pos):
                             debug_log("[LEADERBOARD] Back clicked")
                             gamestate.state = "SELECTION"
@@ -1256,11 +1255,12 @@ def run_game():
                     if action == "back":
                         gamestate.state = "LOGIN"
                         login_screen.reset()
+                        
                     elif e.type == pygame.MOUSEBUTTONDOWN:
-                        profile_rects = guest_load_screen.draw(surface, SCREEN_WIDTH, SCREEN_HEIGHT)
+                        profile_rects = guest_load_screen.draw(surface, SCREEN_WIDTH, SCREEN_HEIGHT, mouse_pos)
                         clicked = guest_load_screen.get_clicked_profile(mouse_pos)
                         
-                        if clicked == "_new_profile":
+                        if clicked and clicked.startswith("_new_profile"):
                             name = _create_guest_profile_name() or "guest"
                             user_session["username"] = name
                             user_session["password"] = None
@@ -1953,7 +1953,7 @@ def run_game():
                 
                 # Calculate and add score for completed level
                 level_score = _calculate_level_score()
-                user_session["score"] += level_score
+                user_session["score"] = user_session.get("score", 0) + level_score
                 
                 # Play win sound
                 if gamestate.sfx.get("finishedlevel") is not None:
@@ -2013,15 +2013,15 @@ def run_game():
 
         elif gamestate.state == "LOGIN":
             surface.blit(start_bg, (0, 0))
-            login_screen.draw(surface, SCREEN_WIDTH, SCREEN_HEIGHT)
+            login_screen.draw(surface, SCREEN_WIDTH, SCREEN_HEIGHT, mouse_pos)
 
         elif gamestate.state == "REGISTER":
             surface.blit(start_bg, (0, 0))
-            register_screen.draw(surface, SCREEN_WIDTH, SCREEN_HEIGHT)
+            register_screen.draw(surface, SCREEN_WIDTH, SCREEN_HEIGHT, mouse_pos)
 
         elif gamestate.state == "LEADERBOARD":
             surface.blit(start_bg, (0, 0))
-            leaderboard_screen.draw(surface, SCREEN_WIDTH, SCREEN_HEIGHT)
+            leaderboard_screen.draw(surface, SCREEN_WIDTH, SCREEN_HEIGHT,mouse_pos)
 
         elif gamestate.state == "GUEST_LOAD":
             guest_load_screen.draw(surface, SCREEN_WIDTH, SCREEN_HEIGHT)

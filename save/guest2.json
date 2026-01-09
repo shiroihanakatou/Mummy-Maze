@@ -1,0 +1,84 @@
+{
+  "player_info": {
+    "username": "guest2",
+    "password": null,
+    "is_guest": true,
+    "score": 8352
+  },
+  "adventure": {
+    "game_state": {
+      "difficulty": "easy",
+      "impossible_mode": false,
+      "grid_size": 6,
+      "chapter": 1,
+      "level": 2,
+      "player": {
+        "row": 4,
+        "col": 2,
+        "direction": "down"
+      },
+      "enemies": [
+        {
+          "type": "white_mummy",
+          "row": 1,
+          "col": 3,
+          "direction": "down"
+        }
+      ],
+      "goal": {
+        "row": 0,
+        "col": 5
+      },
+      "items": {
+        "keys": [],
+        "traps": [],
+        "has_key": false
+      },
+      "gates": {
+        "positions": [],
+        "states": []
+      }
+    },
+    "move_history": [
+      {
+        "player": [
+          4,
+          2,
+          "down"
+        ],
+        "enemies": [
+          [
+            1,
+            3,
+            "down",
+            "white_mummy"
+          ]
+        ],
+        "keys": [],
+        "gates": {}
+      },
+      {
+        "player": [
+          3,
+          2,
+          "up"
+        ],
+        "enemies": [
+          [
+            2,
+            2,
+            "down",
+            "white_mummy"
+          ]
+        ],
+        "keys": [],
+        "gates": {}
+      }
+    ]
+  },
+  "classic": {
+    "game_state": null,
+    "map_data": null,
+    "move_history": []
+  }
+}

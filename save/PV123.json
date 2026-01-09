@@ -1,0 +1,217 @@
+{
+  "player_info": {
+    "username": "PV123",
+    "password": "090123",
+    "score": 28002
+  },
+  "classic": {
+    "game_state": {
+      "difficulty": "hard",
+      "impossible_mode": false,
+      "grid_size": 10,
+      "chapter": 1,
+      "level": 1,
+      "player": {
+        "row": 8,
+        "col": 2,
+        "direction": "down"
+      },
+      "enemies": [
+        {
+          "type": "white_mummy",
+          "row": 0,
+          "col": 9,
+          "direction": "down"
+        },
+        {
+          "type": "red_mummy",
+          "row": 6,
+          "col": 7,
+          "direction": "down"
+        },
+        {
+          "type": "red_mummy",
+          "row": 6,
+          "col": 3,
+          "direction": "down"
+        }
+      ],
+      "goal": {
+        "row": 9,
+        "col": 9
+      },
+      "items": {
+        "keys": [
+          [
+            3,
+            6
+          ]
+        ],
+        "traps": [],
+        "has_key": false
+      },
+      "gates": {
+        "positions": [
+          [
+            6,
+            6
+          ],
+          [
+            4,
+            0
+          ],
+          [
+            1,
+            1
+          ]
+        ],
+        "states": [
+          false,
+          true,
+          false
+        ]
+      }
+    },
+    "map_data": {
+      "size": {
+        "rows": 10,
+        "cols": 10
+      },
+      "tiles": [
+        ".........W",
+        "..........",
+        "..........",
+        "......K...",
+        "..........",
+        "..........",
+        "...R...R..",
+        "..........",
+        "..P.......",
+        ".........E"
+      ],
+      "walls_v": [
+        "           ",
+        " |   |     ",
+        "    | |    ",
+        "  ||| |    ",
+        "           ",
+        "  | | |    ",
+        "  |        ",
+        "   | |   | ",
+        "  |  ||    ",
+        " |         "
+      ],
+      "walls_h": [
+        "----------",
+        " = -    - ",
+        "-        -",
+        " - --     ",
+        "~        -",
+        " - -- -  -",
+        " -- - =-  ",
+        "    -     ",
+        "     - -  ",
+        "    -     ",
+        "----------"
+      ],
+      "exit": {
+        "row": 9,
+        "col": 9
+      }
+    },
+    "move_history": [
+      {
+        "player": [
+          8,
+          2,
+          "down"
+        ],
+        "enemies": [
+          [
+            0,
+            9,
+            "down",
+            "white_mummy"
+          ],
+          [
+            6,
+            7,
+            "down",
+            "red_mummy"
+          ],
+          [
+            6,
+            3,
+            "down",
+            "red_mummy"
+          ]
+        ],
+        "keys": [
+          [
+            3,
+            6
+          ]
+        ],
+        "gates": {
+          "(6, 6)": false,
+          "(4, 0)": true,
+          "(1, 1)": false
+        }
+      }
+    ]
+  },
+  "adventure": {
+    "game_state": {
+      "difficulty": "easy",
+      "impossible_mode": false,
+      "grid_size": 6,
+      "chapter": 1,
+      "level": 4,
+      "player": {
+        "row": 3,
+        "col": 1,
+        "direction": "down"
+      },
+      "enemies": [
+        {
+          "type": "white_mummy",
+          "row": 2,
+          "col": 5,
+          "direction": "down"
+        }
+      ],
+      "goal": {
+        "row": 5,
+        "col": 5
+      },
+      "items": {
+        "keys": [],
+        "traps": [],
+        "has_key": false
+      },
+      "gates": {
+        "positions": [],
+        "states": []
+      }
+    },
+    "move_history": [
+      {
+        "player": [
+          3,
+          1,
+          "down"
+        ],
+        "enemies": [
+          [
+            2,
+            5,
+            "down",
+            "white_mummy"
+          ]
+        ],
+        "keys": [],
+        "gates": {}
+      }
+    ]
+  }
+}
