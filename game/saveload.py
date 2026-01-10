@@ -213,14 +213,19 @@ def serialize_adventure(player, enemies, gamestate, grid):
     return state, move_history
 
 def create_save_data(username: str, password: Optional[str], is_guest: bool, score: int,
-                     adventure_state=None, classic_state=None):
+                     adventure_state=None, classic_state=None, skin: str = "explorer", 
+                     owned_skins: list = None):
     """Create complete save data structure"""
+    if owned_skins is None:
+        owned_skins = ["explorer"]  # Explorer is free by default
     return {
         "player_info": {
             "username": username,
             "password": password,
             "is_guest": is_guest,
-            "score": score
+            "score": score,
+            "skin": skin,
+            "owned_skins": owned_skins
         },
         "adventure": adventure_state or {"game_state": None, "move_history": []},
         "classic": classic_state or {"game_state": None, "map_data": None, "move_history": []}
@@ -319,25 +324,48 @@ def get_leaderboard(limit: int = 10) -> list:
         debug_log(f"[SaveLoad] Leaderboard fetch failed: {e}")
         return []
 
-def calculate_score(difficulty: str, minutes: float, actual_moves: int, solution_len: int) -> int:
+def calculate_score(difficulty: str, minutes: float, actual_moves: int, solution_len: int, is_adventure: bool = False) -> dict:
     """Calculate score based on difficulty, time, and move efficiency
     
-    Formula: base_score / minutes * (solution_len / actual_moves)
+    New formula:
+    - Base points: 100 (easy), 200 (medium), 500 (hard), 1000 (impossible)
+    - Adventure mode: doubles base points
+    - Time bonus: base_points * 3 / minutes
+    - Move bonus: base_points * 3 * (solution_len / actual_moves)
+    
+    Returns dict with breakdown: base, time_bonus, move_bonus, total
     """
     if minutes <= 0 or actual_moves <= 0 or solution_len <= 0:
-        return 0
+        return {"base": 0, "time_bonus": 0, "move_bonus": 0, "total": 0}
     
     base_scores = {
-        "easy": 1000,
-        "medium": 2000,
-        "hard": 5000
+        "easy": 100,
+        "medium": 200,
+        "hard": 500,
+        "impossible": 1000
     }
     
-    base = base_scores.get(difficulty, 1000)
-    move_ratio = min(1.0, solution_len / actual_moves)  # Cap at 1.0
+    base = base_scores.get(difficulty, 100)
     
-    score = int((base / minutes) * move_ratio)
-    return max(0, score)
+    # Adventure mode doubles base points
+    if is_adventure:
+        base *= 2
+    
+    # Time bonus: faster = higher bonus
+    time_bonus = int(base * 3 / minutes)
+    
+    # Move bonus: fewer moves = higher bonus (capped at optimal)
+    move_ratio = min(1.0, solution_len / actual_moves)
+    move_bonus = int(base * 3 * move_ratio)
+    
+    total = base + time_bonus + move_bonus
+    
+    return {
+        "base": base,
+        "time_bonus": time_bonus,
+        "move_bonus": move_bonus,
+        "total": total
+    }
 
 def verify_login(username: str, password: str) -> bool:
     """Verify login credentials (local first, then Firebase)"""

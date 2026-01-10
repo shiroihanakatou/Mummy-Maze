@@ -10,6 +10,7 @@ from module import *
 from entity import Player, Enemy, Cell
 from screen.button import Undobutton, Restartbutton, Newgamebutton, Exitbutton, StartButton, Button
 from screen.login import LoginScreen, LeaderboardScreen, RegisterScreen, GuestLoadScreen, SaveDialog
+from skin_module import CharacterSkinScreen
 from module.gamestate import Gamestate, load_frames_with_mask
 from saveload import *
 
@@ -111,8 +112,11 @@ def run_game():
         "password": None,
         "is_guest": False,
         "score": 0,
+        "skin": "explorer",  # Current character skin
+        "owned_skins": ["explorer"],  # List of owned skins
         "level_start_time": None,
-        "level_start_moves": 0
+        "level_start_moves": 0,
+        "last_score_breakdown": {"base": 0, "time_bonus": 0, "move_bonus": 0, "total": 0}  # For win screen display
     }
     
     # Track state transitions for level initialization
@@ -122,10 +126,12 @@ def run_game():
     state_tree = {
         "LOGIN": None,
         "REGISTER": "LOGIN",
-        "LEADERBOARD": "LOGIN",
+        "LEADERBOARD": "SELECTION",
         "GUEST_LOAD": "LOGIN",
         "SELECTION": None,
+        "MODE_CHOOSE": "SELECTION",  # Mode selection (Classic/Adventure)
         "PLAYING": "SELECTION",
+        "CHARACTER_SELECT": "SELECTION",  # Skin selection screen
     }
 
     # Save dialog - new class-based implementation
@@ -214,13 +220,19 @@ def run_game():
     button_height = int(dialog_size * 0.15)
     dialog_button = pygame.transform.smoothscale(dialog_button, (button_width, button_height))
 
-    # Selection screen buttons
-    classic_button = TextButton("CLASSIC MODE", (465, 492), menu_font, idle_color=(0, 0, 0), hover_color=(255, 0, 0))
-    tutorial_button = TextButton("TUTORIAL", (835, 492), menu_font, idle_color=(0, 0, 0), hover_color=(255, 0, 0))
-    adventure_button = TextButton("ADVENTURE", (465, 605), menu_font, idle_color=(0, 0, 0), hover_color=(255, 0, 0))
-    quit_button = TextButton("OPTIONS", (835, 605), menu_font, idle_color=(0, 0, 0), hover_color=(255, 0, 0))
-    leaderboard_button = TextButton("LEADERBOARD", (650, 720), menu_font, idle_color=(0, 0, 0), hover_color=(255, 0, 0))
-    logout_button = TextButton("LOGOUT", (SCREEN_WIDTH * 3 // 4, 720), menu_font, idle_color=(0, 0, 0), hover_color=(255, 0, 0))
+    # Selection screen buttons - New layout with PLAY button
+    play_button = TextButton("PLAY", (SCREEN_WIDTH // 2, 400), menu_font, idle_color=(0, 100, 0), hover_color=(0, 200, 0))
+    tutorial_button = TextButton("TUTORIAL", (SCREEN_WIDTH // 2, 480), menu_font, idle_color=(0, 0, 0), hover_color=(255, 0, 0))
+    character_button = TextButton("CHARACTER", (SCREEN_WIDTH // 2, 560), menu_font, idle_color=(0, 0, 0), hover_color=(255, 0, 0))
+    leaderboard_button = TextButton("LEADERBOARD", (SCREEN_WIDTH // 2, 640), menu_font, idle_color=(0, 0, 0), hover_color=(255, 0, 0))
+    logout_button = TextButton("LOGOUT", (400, 730), menu_font, idle_color=(0, 0, 0), hover_color=(255, 0, 0))
+    quit_button = TextButton("OPTIONS", (900, 730), menu_font, idle_color=(0, 0, 0), hover_color=(255, 0, 0))
+    
+    # Mode choose screen buttons (after PLAY button)
+    choose_mode_title = TextButton("Choose Mode", (SCREEN_WIDTH // 2, 400), menu_font, idle_color=(0, 0, 0), hover_color=(0, 0, 0))
+    classic_button = TextButton("CLASSIC", (SCREEN_WIDTH // 2, 500), menu_font, idle_color=(0, 0, 0), hover_color=(255, 0, 0))
+    adventure_button = TextButton("ADVENTURE", (SCREEN_WIDTH // 2, 600), menu_font, idle_color=(0, 0, 0), hover_color=(255, 0, 0))
+    mode_back_button = TextButton("Back", (SCREEN_WIDTH // 2, 680), menu_font, idle_color=(0, 0, 0), hover_color=(255, 0, 0))
 
     # Difficulty screen UI
     choose_diff_text = menu_font.render("CHOOSE DIFFICULTY", True, (0, 0, 0))
@@ -234,10 +246,11 @@ def run_game():
     continue_button = TextButton("Continue Last Game", (SCREEN_WIDTH * 3 // 4, 720), menu_font, idle_color=(0, 100, 0), hover_color=(0, 200, 0))
 
     # Login and Leaderboard screens
-    login_screen = LoginScreen(SCREEN_WIDTH,SCREEN_HEIGHT)
-    leaderboard_screen = LeaderboardScreen(SCREEN_WIDTH,SCREEN_HEIGHT)
-    register_screen = RegisterScreen(SCREEN_WIDTH,SCREEN_HEIGHT)
+    login_screen = LoginScreen(SCREEN_WIDTH, SCREEN_HEIGHT)
+    leaderboard_screen = LeaderboardScreen(SCREEN_WIDTH, SCREEN_HEIGHT)
+    register_screen = RegisterScreen(SCREEN_WIDTH, SCREEN_HEIGHT)
     guest_load_screen = GuestLoadScreen()
+    character_skin_screen = CharacterSkinScreen()
     guest_profile_buttons: list[TextButton] = []
 
     def _refresh_guest_profiles():
@@ -490,7 +503,7 @@ def run_game():
         _sync_dynamic_vars()
 
         grid = [[Cell(r, c) for c in range(COLS)] for r in range(ROWS)]
-        player = Player()
+        player = Player(skin=user_session.get("skin", "explorer"))
         # Clear all old enemies and their states
         enemies.clear()
         killed_uids.clear()
@@ -559,7 +572,7 @@ def run_game():
         _sync_dynamic_vars()
 
         grid = [[Cell(r, c) for c in range(COLS)] for r in range(ROWS)]
-        player = Player()
+        player = Player(skin=user_session.get("skin", "explorer"))
         # Clear all old enemies and their states
         enemies.clear()
         killed_uids.clear()
@@ -690,7 +703,9 @@ def run_game():
                     username,
                     user_session["password"],
                     user_session["is_guest"],
-                    user_session["score"]
+                    user_session["score"],
+                    skin=user_session.get("skin", "explorer"),
+                    owned_skins=user_session.get("owned_skins", ["explorer"])
                 )
             
             # Update the appropriate mode section
@@ -708,6 +723,8 @@ def run_game():
             
             # Update player info
             save_data["player_info"]["score"] = user_session["score"]
+            save_data["player_info"]["skin"] = user_session.get("skin", "explorer")
+            save_data["player_info"]["owned_skins"] = user_session.get("owned_skins", ["explorer"])
             
             # Save to both local and (if not guest) Firebase
             save_local(username, save_data)
@@ -731,9 +748,9 @@ def run_game():
         return None
 
     def _calculate_level_score():
-        """Calculate score for completed level"""
+        """Calculate score for completed level. Returns dict with breakdown."""
         if user_session["level_start_time"] is None:
-            return 0
+            return {"base": 0, "time_bonus": 0, "move_bonus": 0, "total": 0}
         
         elapsed = time.time() - user_session["level_start_time"]
         minutes = max(0.1, elapsed / 60.0)  # Minimum 0.1 to avoid division by zero
@@ -751,7 +768,8 @@ def run_game():
         actual_moves = len(gamestate.storedmove) - user_session["level_start_moves"]
         solution_len = len(gamestate.solution) if gamestate.solution else actual_moves
         
-        return calculate_score(difficulty, minutes, max(1, actual_moves), max(1, solution_len))
+        is_adventure = gamestate.mode == "adventure"
+        return calculate_score(difficulty, minutes, max(1, actual_moves), max(1, solution_len), is_adventure)
 
     # ===== Phase 1: enemy hooks + collision resolver =====
     # Rule: If an enemy moves into a tile occupied by another enemy that is standing still,
@@ -859,7 +877,7 @@ def run_game():
                 hover_any_button = True
 
         elif gamestate.state == "SELECTION":
-            for r in [classic_button, adventure_button, tutorial_button, quit_button, leaderboard_button, logout_button]:
+            for r in [classic_button, adventure_button, tutorial_button, quit_button, character_button, leaderboard_button, logout_button]:
                 if r.rect.collidepoint(mouse_pos):
                     hover_any_button = True
                     break
@@ -930,7 +948,7 @@ def run_game():
             # Save dialog handling - new class-based implementation
             if save_dialog["active"]:
                 if e.type == pygame.MOUSEBUTTONDOWN:
-                    button_rects = save_dialog_screen.draw(surface,SCREEN_WIDTH, SCREEN_HEIGHT, mouse_pos)
+                    button_rects = save_dialog_screen._calculate_button_rects(SCREEN_WIDTH, SCREEN_HEIGHT)
                     clicked = save_dialog_screen.get_clicked(mouse_pos, button_rects)
                     
                     debug_log(f"[DIALOG EVENT] Clicked: {clicked}, Type: {save_dialog['dialog_type']}, Phase: {save_dialog_screen.phase}")
@@ -1019,48 +1037,12 @@ def run_game():
 
             elif gamestate.state == "SELECTION":
                 if e.type == pygame.MOUSEBUTTONDOWN:
-                    if classic_button.is_clicked(mouse_pos):
-                        # print(f"[Click] classic_button clicked, sfx['click'] = {gamestate.sfx.get('click')}")
-                        if gamestate.sfx.get("click") is not None:
-                            try:
-                                # print("[Click] Playing click sound...")
-                                gamestate.sfx["click"].play()
-                                # print("[Click] Click sound played successfully")
-                            except Exception as ex:
-                                pass  # print(f"[Click] Error playing click: {ex}")
-                        gamestate.state = "DIFFICULTY"
-
-                    elif adventure_button.is_clicked(mouse_pos):
+                    if play_button.is_clicked(mouse_pos):
                         if gamestate.sfx.get("click") is not None:
                             try:
                                 gamestate.sfx["click"].play()
                             except: pass
-                        
-                        # Load adventure progress from save if available
-                        username = user_session.get("username")
-                        loaded_chapter, loaded_level = 1, 1
-                        if username:
-                            save_data = None
-                            if user_session.get("is_guest"):
-                                save_data = load_local(username)
-                            else:
-                                save_data = load_firebase(username) or load_local(username)
-                            
-                            if save_data and save_data.get("adventure", {}).get("game_state"):
-                                adv_state = save_data["adventure"]["game_state"]
-                                loaded_chapter = adv_state.get("chapter", 1)
-                                loaded_level = adv_state.get("level", 1)
-                        
-                        progress_mgr.current_chapter = loaded_chapter
-                        progress_mgr.current_level = loaded_level
-                        gamestate.chapter = loaded_chapter
-                        gamestate.level = loaded_level
-                        gamestate.impossible_mode = False  # Adventure mode doesn't use impossible AI
-                        ok = _load_adventure_level(progress_mgr.current_chapter, progress_mgr.current_level)
-                        if ok:
-                            gamestate.mode = "adventure"
-                            gamestate.state = "WORLD_MAP"
-                            gamestate.gameover = False
+                        gamestate.state = "MODE_CHOOSE"
 
                     elif tutorial_button.is_clicked(mouse_pos):
                         if gamestate.sfx.get("click") is not None:
@@ -1087,6 +1069,19 @@ def run_game():
                         # Open options menu from SELECTION
                         options_return_state = "SELECTION"
                         gamestate.state = "OPTIONS"
+                    
+                    elif character_button.is_clicked(mouse_pos):
+                        if gamestate.sfx.get("click") is not None:
+                            try:
+                                gamestate.sfx["click"].play()
+                            except: pass
+                        # Open character skin selection screen
+                        character_skin_screen.set_user_data(
+                            user_session.get("score", 0),
+                            user_session.get("owned_skins", ["explorer"]),
+                            user_session.get("skin", "explorer")
+                        )
+                        gamestate.state = "CHARACTER_SELECT"
                     
                     elif logout_button.is_clicked(mouse_pos):
                         if gamestate.sfx.get("click") is not None:
@@ -1118,50 +1113,37 @@ def run_game():
                                 player_data = load_local(username)
                                 if player_data:
                                     user_session["score"] = player_data.get("player_info", {}).get("score", 0)
+                                    user_session["skin"] = player_data.get("player_info", {}).get("skin", "explorer")
+                                    user_session["owned_skins"] = player_data.get("player_info", {}).get("owned_skins", ["explorer"])
                                 gamestate.state = "SELECTION"
                             else:
                                 login_screen.set_error("Invalid username or password")
                         else:
                             login_screen.set_error("Username and password required")
                     
-                    # Mouse clicks for buttons
-                    if e.type == pygame.MOUSEBUTTONDOWN:
-                        button_rects = login_screen.draw(surface, SCREEN_WIDTH, SCREEN_HEIGHT, mouse_pos)
-                        
-                        # Login button
-                        if button_rects["login_btn"].collidepoint(mouse_pos):
-                            username, password = login_screen.get_credentials()
-                            if username and password:
-                                if verify_login(username, password):
-                                    user_session["username"] = username
-                                    user_session["password"] = password
-                                    user_session["is_guest"] = False
-                                    player_data = load_local(username)
-                                    if player_data:
-                                        user_session["score"] = player_data.get("player_info", {}).get("score", 0)
-                                    gamestate.state = "SELECTION"
-                                else:
-                                    login_screen.set_error("Invalid username or password")
-                            else:
-                                login_screen.set_error("Username and password required")
-                        
-                        # Register button (goes to REGISTER state)
-                        elif button_rects["create_btn"].collidepoint(mouse_pos):
-                            gamestate.state = "REGISTER"
-                            register_screen.reset()
-                        
-                        # Play as Guest button -> go to guest load screen
-                        elif button_rects["guest_btn"].collidepoint(mouse_pos):
-                            user_session["username"] = "Guest"
-                            user_session["is_guest"] = True
-                            user_session["score"] = 0
-                            _refresh_guest_profiles()
-                            gamestate.state = "GUEST_LOAD"
-
-                        # Load Local Save (guest)
-                        elif button_rects.get("exit_btn") and button_rects["exit_btn"].collidepoint(mouse_pos):
-                            pygame.quit()
-                            sys.exit()
+                    elif action == "register":
+                        # Go to register screen
+                        gamestate.state = "REGISTER"
+                        register_screen.reset()
+                    
+                    elif action == "guest":
+                        # Play as new guest -> go to guest load screen
+                        user_session["username"] = "Guest"
+                        user_session["is_guest"] = True
+                        user_session["score"] = 0
+                        user_session["skin"] = "explorer"
+                        user_session["owned_skins"] = ["explorer"]
+                        _refresh_guest_profiles()
+                        gamestate.state = "GUEST_LOAD"
+                    
+                    elif action == "load_guest":
+                        # Load existing guest profile
+                        user_session["is_guest"] = True
+                        _refresh_guest_profiles()
+                        gamestate.state = "GUEST_LOAD"
+                    elif action == "exit":
+                        pygame.quit()
+                        sys.exit()
 
             elif gamestate.state == "REGISTER":
                 if e.type == pygame.KEYDOWN or e.type == pygame.MOUSEBUTTONDOWN:
@@ -1193,60 +1175,20 @@ def run_game():
                                 user_session["password"] = password
                                 user_session["is_guest"] = False
                                 user_session["score"] = 0
+                                user_session["skin"] = "explorer"
                                 gamestate.state = "SELECTION"
                         else:
                             register_screen.set_error("All fields required")
                     
-                    # Mouse clicks for buttons
-                    if e.type == pygame.MOUSEBUTTONDOWN:
-                        button_rects = register_screen.draw(surface, SCREEN_WIDTH, SCREEN_HEIGHT, mouse_pos)
-                        
-                        # Register button
-                        if button_rects["register_btn"].collidepoint(mouse_pos):
-                            username, password, confirm = register_screen.get_credentials()
-                            if username and password and confirm:
-                                if len(username) < 3:
-                                    register_screen.set_error("Username must be at least 3 characters")
-                                elif len(password) < 4:
-                                    register_screen.set_error("Password must be at least 4 characters")
-                                elif password != confirm:
-                                    register_screen.set_error("Passwords do not match")
-                                else:
-                                    # Create new account
-                                    save_data = {
-                                        "player_info": {
-                                            "username": username,
-                                            "password": password,
-                                            "score": 0
-                                        },
-                                        "classic": {},
-                                        "adventure": {}
-                                    }
-                                    save_local(username, save_data)
-                                    user_session["username"] = username
-                                    user_session["password"] = password
-                                    user_session["is_guest"] = False
-                                    user_session["score"] = 0
-                                    gamestate.state = "SELECTION"
-                            else:
-                                register_screen.set_error("All fields required")
-                        
-                        # Back button
-                        elif button_rects["back_btn"].collidepoint(mouse_pos):
-                            gamestate.state = "LOGIN"
-                            login_screen.reset()
+                    elif action == "back":
+                        gamestate.state = "LOGIN"
+                        login_screen.reset()
 
             elif gamestate.state == "LEADERBOARD":
                 if e.type == pygame.KEYDOWN or e.type == pygame.MOUSEBUTTONDOWN:
                     action = leaderboard_screen.handle_event(e)
                     if action == "back":
                         gamestate.state = "SELECTION"
-                    # Mouse click: check back button rect
-                    if e.type == pygame.MOUSEBUTTONDOWN:
-                        rects = leaderboard_screen.draw(surface,SCREEN_WIDTH, SCREEN_HEIGHT, mouse_pos)
-                        if rects.get("back_btn") and rects["back_btn"].collidepoint(mouse_pos):
-                            debug_log("[LEADERBOARD] Back clicked")
-                            gamestate.state = "SELECTION"
 
             elif gamestate.state == "GUEST_LOAD":
                 if e.type == pygame.MOUSEBUTTONDOWN or e.type == pygame.KEYDOWN:
@@ -1255,23 +1197,24 @@ def run_game():
                     if action == "back":
                         gamestate.state = "LOGIN"
                         login_screen.reset()
-                        
                     elif e.type == pygame.MOUSEBUTTONDOWN:
-                        profile_rects = guest_load_screen.draw(surface, SCREEN_WIDTH, SCREEN_HEIGHT, mouse_pos)
                         clicked = guest_load_screen.get_clicked_profile(mouse_pos)
                         
                         if clicked and clicked.startswith("_new_profile"):
+                            # New guest profile slot clicked
                             name = _create_guest_profile_name() or "guest"
                             user_session["username"] = name
                             user_session["password"] = None
                             user_session["is_guest"] = True
                             user_session["score"] = 0
+                            user_session["skin"] = "explorer"
+                            user_session["owned_skins"] = ["explorer"]
                             gamestate.state = "SELECTION"
                         elif clicked == "_back":
                             gamestate.state = "LOGIN"
                             login_screen.reset()
                         elif clicked and clicked.startswith("_"):
-                            pass  # Skip internal keys
+                            pass  # Skip other internal keys
                         elif clicked:
                             # Regular profile selected
                             data = load_local(clicked)
@@ -1280,12 +1223,96 @@ def run_game():
                                 user_session["password"] = None
                                 user_session["is_guest"] = True
                                 user_session["score"] = data.get("player_info", {}).get("score", 0)
+                                user_session["skin"] = data.get("player_info", {}).get("skin", "explorer")
+                                user_session["owned_skins"] = data.get("player_info", {}).get("owned_skins", ["explorer"])
                             gamestate.state = "SELECTION"
 
             elif gamestate.state == "TUTORIAL":
                 if e.type == pygame.KEYDOWN and e.key == pygame.K_ESCAPE:
                     gamestate.state = "SELECTION"
                 elif e.type == pygame.MOUSEBUTTONDOWN:
+                    gamestate.state = "SELECTION"
+
+            elif gamestate.state == "CHARACTER_SELECT":
+                if e.type == pygame.MOUSEBUTTONDOWN or e.type == pygame.KEYDOWN:
+                    result = character_skin_screen.handle_event(e, mouse_pos)
+                    if result:
+                        action, skin_id = result
+                        if action == "back":
+                            gamestate.state = "SELECTION"
+                        elif action == "buy":
+                            # Buy the skin
+                            from skin_module import get_skin_info
+                            skin_info = get_skin_info(skin_id)
+                            cost = skin_info["cost"]
+                            if user_session["score"] >= cost:
+                                user_session["score"] -= cost
+                                if skin_id not in user_session["owned_skins"]:
+                                    user_session["owned_skins"].append(skin_id)
+                                # Auto-select the newly purchased skin
+                                user_session["skin"] = skin_id
+                                player.set_skin(skin_id)
+                                # Update screen data
+                                character_skin_screen.set_user_data(
+                                    user_session["score"],
+                                    user_session["owned_skins"],
+                                    user_session["skin"]
+                                )
+                        elif action == "select":
+                            # Apply the selected skin (already owned)
+                            user_session["skin"] = skin_id
+                            player.set_skin(skin_id)
+                            character_skin_screen.set_selected(skin_id)
+
+            elif gamestate.state == "MODE_CHOOSE":
+                if e.type == pygame.MOUSEBUTTONDOWN:
+                    if classic_button.is_clicked(mouse_pos):
+                        if gamestate.sfx.get("click") is not None:
+                            try:
+                                gamestate.sfx["click"].play()
+                            except: pass
+                        gamestate.state = "DIFFICULTY"
+                    
+                    elif adventure_button.is_clicked(mouse_pos):
+                        if gamestate.sfx.get("click") is not None:
+                            try:
+                                gamestate.sfx["click"].play()
+                            except: pass
+                        
+                        # Load adventure progress from save if available
+                        username = user_session.get("username")
+                        loaded_chapter, loaded_level = 1, 1
+                        if username:
+                            save_data = None
+                            if user_session.get("is_guest"):
+                                save_data = load_local(username)
+                            else:
+                                save_data = load_firebase(username) or load_local(username)
+                            
+                            if save_data and save_data.get("adventure", {}).get("game_state"):
+                                adv_state = save_data["adventure"]["game_state"]
+                                loaded_chapter = adv_state.get("chapter", 1)
+                                loaded_level = adv_state.get("level", 1)
+                        
+                        progress_mgr.current_chapter = loaded_chapter
+                        progress_mgr.current_level = loaded_level
+                        gamestate.chapter = loaded_chapter
+                        gamestate.level = loaded_level
+                        gamestate.impossible_mode = False  # Adventure mode doesn't use impossible AI
+                        ok = _load_adventure_level(progress_mgr.current_chapter, progress_mgr.current_level)
+                        if ok:
+                            gamestate.mode = "adventure"
+                            gamestate.state = "WORLD_MAP"
+                            gamestate.gameover = False
+                    
+                    elif mode_back_button.is_clicked(mouse_pos):
+                        if gamestate.sfx.get("click") is not None:
+                            try:
+                                gamestate.sfx["click"].play()
+                            except: pass
+                        gamestate.state = "SELECTION"
+                
+                elif e.type == pygame.KEYDOWN and e.key == pygame.K_ESCAPE:
                     gamestate.state = "SELECTION"
 
             elif gamestate.state == "DIFFICULTY":
@@ -1953,7 +1980,8 @@ def run_game():
                 
                 # Calculate and add score for completed level
                 level_score = _calculate_level_score()
-                user_session["score"] = user_session.get("score", 0) + level_score
+                user_session["last_score_breakdown"] = level_score  # Store breakdown for display
+                user_session["score"] = user_session.get("score", 0) + level_score["total"]
                 
                 # Play win sound
                 if gamestate.sfx.get("finishedlevel") is not None:
@@ -2007,9 +2035,13 @@ def run_game():
 
         if gamestate.state == "Home":
             surface.blit(start_bg, (0, 0))
-            start_button.draw(surface)
             if start_button.rect.collidepoint(mouse_pos):
-                pygame.draw.rect(surface, (255, 255, 0), start_button.rect, 2)
+                # Draw blurred/faded version on hover
+                hover_img = start_button.image.copy()
+                hover_img.set_alpha(150)  # Make it semi-transparent/faded
+                surface.blit(hover_img, start_button.rect)
+            else:
+                start_button.draw(surface)
 
         elif gamestate.state == "LOGIN":
             surface.blit(start_bg, (0, 0))
@@ -2020,20 +2052,33 @@ def run_game():
             register_screen.draw(surface, SCREEN_WIDTH, SCREEN_HEIGHT, mouse_pos)
 
         elif gamestate.state == "LEADERBOARD":
-            surface.blit(start_bg, (0, 0))
-            leaderboard_screen.draw(surface, SCREEN_WIDTH, SCREEN_HEIGHT,mouse_pos)
+            leaderboard_screen.draw(surface, SCREEN_WIDTH, SCREEN_HEIGHT, mouse_pos)
 
         elif gamestate.state == "GUEST_LOAD":
-            guest_load_screen.draw(surface, SCREEN_WIDTH, SCREEN_HEIGHT)
+            surface.blit(start_bg, (0, 0))
+            guest_load_screen.draw(surface, SCREEN_WIDTH, SCREEN_HEIGHT, mouse_pos)
+
+        elif gamestate.state == "CHARACTER_SELECT":
+            surface.blit(modeSelect_bg, (0, 0))
+            character_skin_screen.draw(surface, SCREEN_WIDTH, SCREEN_HEIGHT, mouse_pos)
 
         elif gamestate.state == "SELECTION":
             surface.blit(modeSelect_bg, (0, 0))
-            classic_button.draw(surface, mouse_pos)
+            play_button.draw(surface, mouse_pos)
             tutorial_button.draw(surface, mouse_pos)
-            adventure_button.draw(surface, mouse_pos)
-            quit_button.draw(surface, mouse_pos)
+            character_button.draw(surface, mouse_pos)
             leaderboard_button.draw(surface, mouse_pos)
             logout_button.draw(surface, mouse_pos)
+            quit_button.draw(surface, mouse_pos)
+        
+        elif gamestate.state == "MODE_CHOOSE":
+            surface.blit(modeSelect_bg, (0, 0))
+            # Title (TextButton with no hover effect)
+            choose_mode_title.draw(surface, (-1, -1))  # Pass invalid pos so it never hovers
+            
+            classic_button.draw(surface, mouse_pos)
+            adventure_button.draw(surface, mouse_pos)
+            mode_back_button.draw(surface, mouse_pos)
 
         elif gamestate.state == "DIFFICULTY":
             surface.blit(modeSelect_bg, (0, 0))
@@ -2057,11 +2102,10 @@ def run_game():
             overlay.fill((20, 20, 40))
             surface.blit(overlay, (0, 0))
             
-            tutorial_font = pygame.font.SysFont("Verdana", 28)
-            title_font = pygame.font.SysFont("Verdana", 48, bold=True)
+            tutorial_font = pygame.font.SysFont("Verdana", 20)
             
-            # Title
-            title = title_font.render("HOW TO PLAY", True, (255, 200, 100))
+            # Title - use same font as TextButton (menu_font style)
+            title = menu_font.render("HOW TO PLAY", True, (255, 200, 100))
             title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, 80))
             surface.blit(title, title_rect)
             
@@ -2100,7 +2144,7 @@ def run_game():
                     color = (220, 220, 220)  # White for content
                 text = tutorial_font.render(line, True, color)
                 surface.blit(text, (100, y_offset))
-                y_offset += 32
+                y_offset += 26
 
         elif gamestate.state == "NEXTLEVEL":
             # Adventure mode level complete screen (similar to classic WIN_SCREEN)
@@ -2111,11 +2155,32 @@ def run_game():
             
             # Draw "Level Complete!" text
             win_text = nextlevel_btn_font.render("Level Complete!", True, (255, 255, 0))
-            win_rect = win_text.get_rect(center=(OFFSET_X_1 + (SCREEN_WIDTH - OFFSET_X_1) // 2, 300))
+            win_rect = win_text.get_rect(center=(OFFSET_X_1 + (SCREEN_WIDTH - OFFSET_X_1) // 2, 260))
             surface.blit(win_text, win_rect)
             
-            # Display level score using sprite font, centered
-            render_score(surface, user_session.get("score", 0), (OFFSET_X_1 + (SCREEN_WIDTH - OFFSET_X_1) // 2, SCREEN_HEIGHT // 2), scale=1.4)
+            # Display score breakdown
+            breakdown = user_session.get("last_score_breakdown", {"base": 0, "time_bonus": 0, "move_bonus": 0, "total": 0})
+            center_x = OFFSET_X_1 + (SCREEN_WIDTH - OFFSET_X_1) // 2
+            bonus_font = pygame.font.SysFont("Verdana", 22)
+            y_start = 320
+            
+            base_text = bonus_font.render(f"Base Points: {breakdown['base']}", True, (255, 255, 255))
+            surface.blit(base_text, base_text.get_rect(center=(center_x, y_start)))
+            
+            time_text = bonus_font.render(f"Time Bonus: +{breakdown['time_bonus']}", True, (100, 255, 100))
+            surface.blit(time_text, time_text.get_rect(center=(center_x, y_start + 35)))
+            
+            move_text = bonus_font.render(f"Move Bonus: +{breakdown['move_bonus']}", True, (100, 200, 255))
+            surface.blit(move_text, move_text.get_rect(center=(center_x, y_start + 70)))
+            
+            # Separator line
+            pygame.draw.line(surface, (200, 200, 200), (center_x - 100, y_start + 100), (center_x + 100, y_start + 100), 2)
+            
+            total_text = bonus_font.render(f"Level Total: {breakdown['total']}", True, (255, 200, 100))
+            surface.blit(total_text, total_text.get_rect(center=(center_x, y_start + 125)))
+            
+            # Display total score
+            render_score(surface, user_session.get("score", 0), (center_x, y_start + 180), scale=1.2)
             
             nextlevel_button.draw(surface, mouse_pos)
             nextlevel_back_button.draw(surface, mouse_pos)
@@ -2129,11 +2194,32 @@ def run_game():
             
             # Draw "You Win!" text
             win_text = nextlevel_btn_font.render("You Win!", True, (255, 255, 0))
-            win_rect = win_text.get_rect(center=(OFFSET_X_1 + (SCREEN_WIDTH - OFFSET_X_1) // 2, 300))
+            win_rect = win_text.get_rect(center=(OFFSET_X_1 + (SCREEN_WIDTH - OFFSET_X_1) // 2, 260))
             surface.blit(win_text, win_rect)
             
-            # Display level score using sprite font, centered on win image
-            render_score(surface, user_session.get("score", 0), (OFFSET_X_1 + (SCREEN_WIDTH - OFFSET_X_1) // 2, SCREEN_HEIGHT // 2), scale=1.4)
+            # Display score breakdown
+            breakdown = user_session.get("last_score_breakdown", {"base": 0, "time_bonus": 0, "move_bonus": 0, "total": 0})
+            center_x = OFFSET_X_1 + (SCREEN_WIDTH - OFFSET_X_1) // 2
+            bonus_font = pygame.font.SysFont("Verdana", 22)
+            y_start = 320
+            
+            base_text = bonus_font.render(f"Base Points: {breakdown['base']}", True, (255, 255, 255))
+            surface.blit(base_text, base_text.get_rect(center=(center_x, y_start)))
+            
+            time_text = bonus_font.render(f"Time Bonus: +{breakdown['time_bonus']}", True, (100, 255, 100))
+            surface.blit(time_text, time_text.get_rect(center=(center_x, y_start + 35)))
+            
+            move_text = bonus_font.render(f"Move Bonus: +{breakdown['move_bonus']}", True, (100, 200, 255))
+            surface.blit(move_text, move_text.get_rect(center=(center_x, y_start + 70)))
+            
+            # Separator line
+            pygame.draw.line(surface, (200, 200, 200), (center_x - 100, y_start + 100), (center_x + 100, y_start + 100), 2)
+            
+            total_text = bonus_font.render(f"Level Total: {breakdown['total']}", True, (255, 200, 100))
+            surface.blit(total_text, total_text.get_rect(center=(center_x, y_start + 125)))
+            
+            # Display total score
+            render_score(surface, user_session.get("score", 0), (center_x, y_start + 180), scale=1.2)
             
             win_newgame_button.draw(surface, mouse_pos)
         

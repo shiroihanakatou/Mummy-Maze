@@ -45,11 +45,18 @@ class Cell:
 
 
 class Player:
-    def __init__(self):
+    # Available character skins (skin_id -> display_name)
+    AVAILABLE_SKINS = {
+        "explorer": "Explorer",
+        "ash": "Ash",
+    }
+    
+    def __init__(self, skin: str = "explorer"):
         self.row = 0
         self.col = 0
         self.direction = "down"
-        self.type = "explorer"
+        self.skin = skin  # Current skin ID
+        self.type = "explorer"  # Keep for backward compatibility
 
         self.sprite_sheet = pygame.image.load(f"game/assets/images/{self.type}6.png").convert_alpha()
         sheet_rect = self.sprite_sheet.get_rect()
@@ -81,6 +88,19 @@ class Player:
         self._move_T = 0.0
         self._move_start_dx = 0.0
         self._move_start_dy = 0.0
+        
+        # Apply skin if not default
+        if skin != "explorer":
+            self.set_skin(skin)
+    
+    def set_skin(self, skin_id: str):
+        """Change the player's character skin.
+        
+        Args:
+            skin_id: The skin identifier (e.g., 'explorer', 'ash')
+        """
+        from skin_module.skin_loader import load_skin
+        load_skin(skin_id, self)
 
     def play_animation(self, name, speed, loop=False, reset=True):
         if reset:
@@ -194,10 +214,19 @@ class Player:
 
     def _scale_frame(self, frame):
         factor = CELL_SIZE / 60
-        if hasattr(pygame.transform, "smoothscale_by"):
-            return pygame.transform.smoothscale_by(frame, factor)
+        # Apply extra scaling for custom skins
+        if hasattr(self, "skin_scale"):
+            factor *= self.skin_scale
+        
         w, h = frame.get_size()
-        return pygame.transform.smoothscale(frame, (int(w * factor), int(h * factor)))
+        new_w, new_h = int(w * factor), int(h * factor)
+        
+        # Use nearest-neighbor scaling for pixel art skins (preserves crisp pixels)
+        if hasattr(self, "skin") and self.skin != "explorer":
+            return pygame.transform.scale(frame, (new_w, new_h))
+        
+        # Use smooth scaling for default explorer
+        return pygame.transform.smoothscale(frame, (new_w, new_h))
 
     def draw(self, surface):
         x = self.col * CELL_SIZE + CELL_SIZE // 2 + OFFSET_X + int(self.render_dx)
