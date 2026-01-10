@@ -155,6 +155,7 @@ class CharacterSkinScreen:
             placeholder = self.font_large.render("?", True, (100, 100, 100))
             placeholder_rect = placeholder.get_rect(center=(left_center_x, center_y - 20))
             surface.blit(placeholder, placeholder_rect)
+
         
         # Skin name below preview
         name_text = self.font_normal.render(skin_info["name"], True, (255, 255, 255))

@@ -3,7 +3,12 @@
     "username": "guest2",
     "password": null,
     "is_guest": true,
-    "score": 8352
+    "score": 7352,
+    "skin": "hilda",
+    "owned_skins": [
+      "explorer",
+      "hilda"
+    ]
   },
   "adventure": {
     "game_state": {
@@ -60,8 +65,111 @@
     ]
   },
   "classic": {
-    "game_state": null,
-    "map_data": null,
-    "move_history": []
+    "game_state": {
+      "difficulty": "easy",
+      "impossible_mode": false,
+      "grid_size": 6,
+      "chapter": 1,
+      "level": 1,
+      "player": {
+        "row": 3,
+        "col": 0,
+        "direction": "down"
+      },
+      "enemies": [
+        {
+          "type": "red_scorpion",
+          "row": 3,
+          "col": 5,
+          "direction": "down"
+        }
+      ],
+      "goal": {
+        "row": 0,
+        "col": 5
+      },
+      "items": {
+        "keys": [
+          [
+            1,
+            4
+          ]
+        ],
+        "traps": [],
+        "has_key": false
+      },
+      "gates": {
+        "positions": [
+          [
+            2,
+            3
+          ]
+        ],
+        "states": [
+          false
+        ]
+      }
+    },
+    "map_data": {
+      "size": {
+        "rows": 6,
+        "cols": 6
+      },
+      "tiles": [
+        ".....E",
+        "....K.",
+        "......",
+        "P....S",
+        "......",
+        "......"
+      ],
+      "walls_v": [
+        "   |   ",
+        " |     ",
+        "  |    ",
+        "   |   ",
+        " |     ",
+        "       "
+      ],
+      "walls_h": [
+        "------",
+        "     -",
+        "- -=  ",
+        "      ",
+        "-     ",
+        "    - ",
+        "------"
+      ],
+      "exit": {
+        "row": 0,
+        "col": 5
+      }
+    },
+    "move_history": [
+      {
+        "player": [
+          3,
+          0,
+          "down"
+        ],
+        "enemies": [
+          [
+            3,
+            5,
+            "down",
+            "red_scorpion"
+          ]
+        ],
+        "keys": [
+          [
+            1,
+            4
+          ]
+        ],
+        "gates": {
+          "(2, 3)": false
+        }
+      }
+    ]
   }
 }

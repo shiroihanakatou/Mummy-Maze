@@ -4,31 +4,35 @@ import json
 from pathlib import Path
 
 # Path to characters folder
-CHARACTERS_DIR = Path("game/assets/images/characters")
+CHARACTERS_DIR = Path("game/assets/characters")
+
 
 # Available character skins (skin_id -> {name, cost})
-# cost of 0 means free (explorer is free by default)
-AVAILABLE_SKINS = {
-    "explorer": {"name": "Explorer", "cost": 0},
-    "ash": {"name": "Ash", "cost": 1000},
-}
+# Will be auto-populated from JSON files in CHARACTERS_DIR
+AVAILABLE_SKINS = {}
 
 
-def _load_skin_costs():
-    """Load skin costs from JSON files"""
+
+def _discover_skins():
+    """Auto-discover all available skins from characters directory."""
     global AVAILABLE_SKINS
-    for skin_id in list(AVAILABLE_SKINS.keys()):
-        if skin_id == "explorer":
-            continue  # Explorer is built-in, cost is 0
-        json_path = CHARACTERS_DIR / f"{skin_id}.json"
-        if json_path.exists():
+    # Always include explorer as built-in
+    AVAILABLE_SKINS.clear()
+    AVAILABLE_SKINS["explorer"] = {"name": "Explorer", "cost": 0}
+    # Scan for all *.json files in CHARACTERS_DIR
+    if CHARACTERS_DIR.exists():
+        for json_file in CHARACTERS_DIR.glob("*.json"):
+            skin_id = json_file.stem
+            if skin_id == "explorer":
+                continue  # Already added
             try:
-                with open(json_path, "r") as f:
+                with open(json_file, "r") as f:
                     skin_data = json.load(f)
-                cost = skin_data.get("cost", 1000)  # Default 1000 if not specified
-                AVAILABLE_SKINS[skin_id]["cost"] = cost
+                name = skin_data.get("name", skin_id.title())
+                cost = skin_data.get("cost", 1000)
+                AVAILABLE_SKINS[skin_id] = {"name": name, "cost": cost}
             except Exception as e:
-                print(f"[Skin] Error reading cost for {skin_id}: {e}")
+                print(f"[Skin] Error reading {json_file}: {e}")
 
 
 def get_skin_info(skin_id: str) -> dict:
@@ -38,8 +42,8 @@ def get_skin_info(skin_id: str) -> dict:
     return {"name": skin_id.title(), "cost": 0}
 
 
-# Load costs at module load time
-_load_skin_costs()
+# Auto-discover skins at module load time
+_discover_skins()
 
 
 def load_skin(skin_id: str, entity):
@@ -88,9 +92,26 @@ def load_skin(skin_id: str, entity):
         # Apply background color filter if specified
         bg_color = skin_data.get("background_color")
         if bg_color:
-            # Make the background color transparent
             sheet = sheet.copy()
-            sheet.set_colorkey(tuple(bg_color))
+            # Chuẩn hóa danh sách màu
+            colors = []
+            if isinstance(bg_color, list) and len(bg_color) >= 3:
+                for i in range(0, len(bg_color), 3):
+                    color = tuple(bg_color[i:i+3])
+                    if len(color) == 3:
+                        colors.append(color)
+            else:
+                colors.append(tuple(bg_color))
+            # Duyệt từng pixel và set alpha=0 nếu trùng màu colorkey
+            arr = pygame.surfarray.pixels3d(sheet)
+            alpha = pygame.surfarray.pixels_alpha(sheet)
+            w, h = sheet.get_size()
+            for color in colors:
+                r, g, b = color
+                mask = (arr[:,:,0] == r) & (arr[:,:,1] == g) & (arr[:,:,2] == b)
+                alpha[mask] = 0
+            del arr
+            del alpha
         
         # Get sprite info
         sprites = skin_data.get("sprites", {})
@@ -131,20 +152,29 @@ def load_skin(skin_id: str, entity):
             while len(entity.frames[direction]) < 5:
                 entity.frames[direction].append(entity.frames[direction][-1] if entity.frames[direction] else direction_frames[0])
         
+
+        # Handle missing left/right by flipping
+        if not entity.frames["left"] or all(f is None for f in entity.frames["left"]):
+            if entity.frames["right"]:
+                entity.frames["left"] = [pygame.transform.flip(f, True, False) for f in entity.frames["right"]]
+        if not entity.frames["right"] or all(f is None for f in entity.frames["right"]):
+            if entity.frames["left"]:
+                entity.frames["right"] = [pygame.transform.flip(f, True, False) for f in entity.frames["left"]]
+
         # Update animation sequence based on move_script length
         first_script = list(move_script.values())[0] if move_script else [0, 1, 2, 3, 4]
         entity.anim_sequences["move"] = list(range(len(first_script)))
-        
+
         # Store frame dimensions
         first_dir = list(sprites.values())[0]
         rect = first_dir.get("atlas_rect", first_dir.get("src_rect"))
         entity.frame_w = rect[2] // frames_per_row
         entity.frame_h = rect[3]
-        
+
         # Custom skins need extra scaling (default explorer is ~60px, custom may be smaller)
         # Scale factor from JSON, or calculate based on frame height
         entity.skin_scale = skin_data.get("scale", 2.0)  # Default 2x for custom skins
-        
+
         print(f"[Skin] Loaded skin '{skin_id}' successfully (frames_per_row={frames_per_row}, scale={entity.skin_scale})")
         return True
         
@@ -199,7 +229,23 @@ def get_skin_preview(skin_id: str, target_size: int = 120):
                 bg_color = skin_data.get("background_color")
                 if bg_color:
                     sheet = sheet.copy()
-                    sheet.set_colorkey(tuple(bg_color))
+                    colors = []
+                    if isinstance(bg_color, list) and len(bg_color) >= 3:
+                        for i in range(0, len(bg_color), 3):
+                            color = tuple(bg_color[i:i+3])
+                            if len(color) == 3:
+                                colors.append(color)
+                    else:
+                        colors.append(tuple(bg_color))
+                    arr = pygame.surfarray.pixels3d(sheet)
+                    alpha = pygame.surfarray.pixels_alpha(sheet)
+                    w, h = sheet.get_size()
+                    for color in colors:
+                        r, g, b = color
+                        mask = (arr[:,:,0] == r) & (arr[:,:,1] == g) & (arr[:,:,2] == b)
+                        alpha[mask] = 0
+                    del arr
+                    del alpha
                 
                 sprites = skin_data.get("sprites", {})
                 frames_per_row = skin_data.get("len", 1)

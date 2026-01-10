@@ -3,7 +3,11 @@
     "username": "guest1",
     "password": null,
     "is_guest": true,
-    "score": 0
+    "score": 0,
+    "skin": "explorer",
+    "owned_skins": [
+      "explorer"
+    ]
   },
   "adventure": {
     "game_state": {
@@ -109,56 +113,31 @@
   },
   "classic": {
     "game_state": {
-      "difficulty": "hard",
+      "difficulty": "easy",
       "impossible_mode": false,
-      "grid_size": 10,
+      "grid_size": 6,
       "chapter": 1,
       "level": 1,
       "player": {
-        "row": 0,
-        "col": 5,
+        "row": 1,
+        "col": 3,
         "direction": "down"
       },
       "enemies": [
         {
-          "type": "red_scorpion",
-          "row": 5,
-          "col": 0,
-          "direction": "down"
-        },
-        {
           "type": "white_mummy",
-          "row": 6,
-          "col": 5,
-          "direction": "down"
-        },
-        {
-          "type": "red_mummy",
-          "row": 6,
-          "col": 8,
+          "row": 5,
+          "col": 1,
           "direction": "down"
         }
       ],
       "goal": {
-        "row": 9,
+        "row": 5,
         "col": 5
       },
       "items": {
         "keys": [],
-        "traps": [
-          [
-            1,
-            6
-          ],
-          [
-            5,
-            1
-          ],
-          [
-            5,
-            2
-          ]
-        ],
+        "traps": [],
         "has_key": false
       },
       "gates": {
@@ -168,76 +147,52 @@
     },
     "map_data": {
       "size": {
-        "rows": 10,
-        "cols": 10
+        "rows": 6,
+        "cols": 6
       },
       "tiles": [
-        ".....P....",
-        "......T...",
-        "..........",
-        "..........",
-        "..........",
-        "STT.......",
-        ".....W..R.",
-        "..........",
-        "..........",
-        ".....E...."
+        "......",
+        "...P..",
+        "......",
+        "......",
+        "......",
+        ".W...E"
       ],
       "walls_v": [
-        "       |   ",
-        "         | ",
-        "   ||    | ",
-        "  |        ",
-        "        || ",
-        "       |   ",
-        " |    |    ",
-        "           ",
-        " | |       ",
-        "           "
+        "    |  ",
+        "     | ",
+        " | |   ",
+        " ||  | ",
+        " ||| | ",
+        "    |  "
       ],
       "walls_h": [
-        "----------",
-        " - -   -  ",
-        "         -",
-        " -  -  -  ",
-        "        - ",
-        " ---     -",
-        "   -      ",
-        "      -   ",
-        "          ",
-        "          ",
-        "----------"
+        "------",
+        "-     ",
+        "-  - -",
+        "      ",
+        " --   ",
+        "      ",
+        "------"
       ],
       "exit": {
-        "row": 9,
+        "row": 5,
         "col": 5
       }
     },
     "move_history": [
       {
         "player": [
-          0,
-          5,
+          1,
+          3,
           "down"
         ],
         "enemies": [
           [
             5,
-            0,
-            "down",
-            "red_scorpion"
-          ],
-          [
-            6,
-            5,
+            1,
             "down",
             "white_mummy"
-          ],
-          [
-            6,
-            8,
-            "down",
-            "red_mummy"
           ]
         ],
         "keys": [],

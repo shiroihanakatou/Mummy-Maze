@@ -264,7 +264,7 @@ def run_game():
     btn_try_again = TextButton("TRY AGAIN", (360, 630), menu_font, idle_color=(0, 0, 0), hover_color=(255, 0, 0))
     btn_world_map = TextButton("WORLD MAP", (900, 630), menu_font, idle_color=(0, 0, 0), hover_color=(255, 0, 0))
     btn_undo_move = TextButton("UNDO MOVE", (360, 720), menu_font, idle_color=(0, 0, 0), hover_color=(255, 0, 0))
-    btn_save_quit = TextButton("SAVE AND QUIT", (900, 720), menu_font, idle_color=(0, 0, 0), hover_color=(255, 0, 0))
+    btn_save_quit = TextButton("BACK TO MAIN MENU", (900, 720), menu_font, idle_color=(0, 0, 0), hover_color=(255, 0, 0))
     btn_abandon_hope = TextButton("ABANDON HOPE", (630, 630), menu_font, idle_color=(200, 0, 0), hover_color=(255, 100, 0))
 
     world_map = AdventureWorldMap(ASSETS_DIR, SCREEN_WIDTH, SCREEN_HEIGHT)
@@ -1719,8 +1719,11 @@ def run_game():
                             try:
                                 gamestate.sfx["click"].play()
                             except: pass
-                        pygame.quit()
-                        sys.exit()
+                        # Quay về menu chính thay vì thoát game
+                        gamestate.state = "SELECTION"
+                        gamestate.mode = "classic"
+                        gamestate.gameover = False
+                        menu_y = SCREEN_HEIGHT
 
             elif gamestate.state == "WORLD_MAP":
                 if e.type == pygame.MOUSEBUTTONDOWN:
@@ -2161,7 +2164,7 @@ def run_game():
             # Display score breakdown
             breakdown = user_session.get("last_score_breakdown", {"base": 0, "time_bonus": 0, "move_bonus": 0, "total": 0})
             center_x = OFFSET_X_1 + (SCREEN_WIDTH - OFFSET_X_1) // 2
-            bonus_font = pygame.font.SysFont("Verdana", 22)
+            bonus_font = pygame.font.Font(str(ASSETS_DIR / "font" / "romeo.ttf"), 22)
             y_start = 320
             
             base_text = bonus_font.render(f"Base Points: {breakdown['base']}", True, (255, 255, 255))
@@ -2176,11 +2179,8 @@ def run_game():
             # Separator line
             pygame.draw.line(surface, (200, 200, 200), (center_x - 100, y_start + 100), (center_x + 100, y_start + 100), 2)
             
-            total_text = bonus_font.render(f"Level Total: {breakdown['total']}", True, (255, 200, 100))
-            surface.blit(total_text, total_text.get_rect(center=(center_x, y_start + 125)))
-            
             # Display total score
-            render_score(surface, user_session.get("score", 0), (center_x, y_start + 180), scale=1.2)
+            render_score(surface, breakdown['total'], (center_x, y_start + 150), scale=1)
             
             nextlevel_button.draw(surface, mouse_pos)
             nextlevel_back_button.draw(surface, mouse_pos)
@@ -2200,7 +2200,7 @@ def run_game():
             # Display score breakdown
             breakdown = user_session.get("last_score_breakdown", {"base": 0, "time_bonus": 0, "move_bonus": 0, "total": 0})
             center_x = OFFSET_X_1 + (SCREEN_WIDTH - OFFSET_X_1) // 2
-            bonus_font = pygame.font.SysFont("Verdana", 22)
+            bonus_font = pygame.font.Font(str(ASSETS_DIR / "font" / "romeo.ttf"),22)
             y_start = 320
             
             base_text = bonus_font.render(f"Base Points: {breakdown['base']}", True, (255, 255, 255))
@@ -2215,11 +2215,8 @@ def run_game():
             # Separator line
             pygame.draw.line(surface, (200, 200, 200), (center_x - 100, y_start + 100), (center_x + 100, y_start + 100), 2)
             
-            total_text = bonus_font.render(f"Level Total: {breakdown['total']}", True, (255, 200, 100))
-            surface.blit(total_text, total_text.get_rect(center=(center_x, y_start + 125)))
-            
             # Display total score
-            render_score(surface, user_session.get("score", 0), (center_x, y_start + 180), scale=1.2)
+            render_score(surface, breakdown['total'], (center_x, y_start + 150), scale=1)
             
             win_newgame_button.draw(surface, mouse_pos)
         
@@ -2517,9 +2514,12 @@ def run_game():
                     # Stage-specific render: freakout first, then block drop
                     if stage == "freakout":
                         try:
-                            if gamestate.freakout_frames:
-                                idx = min(gamestate.death_state.get("freak_idx", 0), len(gamestate.freakout_frames) - 1)
-                                frame = gamestate.freakout_frames[idx]
+                            # Nếu skin khác explorer thì dùng dust_frames thay vì freakout_frames
+                            use_dust = hasattr(player, "skin") and player.skin != "explorer"
+                            frames = gamestate.dust_frames if use_dust else gamestate.freakout_frames
+                            if frames:
+                                idx = min(gamestate.death_state.get("freak_idx", 0), len(frames) - 1)
+                                frame = frames[idx]
                                 if hasattr(pygame.transform, "smoothscale_by"):
                                     frame = pygame.transform.smoothscale_by(frame, factor)
                                 else:
@@ -2569,12 +2569,14 @@ def run_game():
                     # Fight frame after dust
                     if gamestate.death_state.get("stage") in ("fight", "done"):
                         fight_frames = None
+                        use_dust = hasattr(player, "skin") and player.skin != "explorer"
                         if death_cause == "red":
                             fight_frames = gamestate.red_fight_frames
                         elif death_cause == "white":
                             fight_frames = gamestate.white_fight_frames
                         elif death_cause == "stung":
-                            fight_frames = gamestate.stung_frames
+                            # Nếu skin khác explorer thì dùng dust_frames thay vì stung_frames
+                            fight_frames = gamestate.dust_frames if use_dust else gamestate.stung_frames
                         if fight_frames:
                             try:
                                 idx = min(gamestate.death_state.get("fight_idx", 0), len(fight_frames) - 1)
