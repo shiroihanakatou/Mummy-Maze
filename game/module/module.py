@@ -762,7 +762,7 @@ def path_finding(player, enemy, grid, gamestate, impossible_mode=False):
     q = deque([start])
     iterations = 0
     # Higher limit for impossible mode with more enemies
-    max_iterations = 500000 if impossible_mode else 100000
+    max_iterations = 1000000 if impossible_mode else 500000
 
     def gate_is_open(rh, c, gate_state_tuple):
         if (rh, c) not in gate_index:

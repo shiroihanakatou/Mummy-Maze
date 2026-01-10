@@ -18,27 +18,15 @@
       "level": 1,
       "player": {
         "row": 1,
-        "col": 0,
-        "direction": "down"
+        "col": 2,
+        "direction": "right"
       },
       "enemies": [
-        {
-          "type": "white_mummy",
-          "row": 5,
-          "col": 1,
-          "direction": "down"
-        },
         {
           "type": "red_mummy",
           "row": 5,
           "col": 2,
-          "direction": "down"
-        },
-        {
-          "type": "red_scorpion",
-          "row": 5,
-          "col": 3,
-          "direction": "down"
+          "direction": "right"
         }
       ],
       "goal": {
@@ -97,6 +85,60 @@
             3,
             "down",
             "red_scorpion"
+          ]
+        ],
+        "keys": [
+          [
+            3,
+            3
+          ]
+        ],
+        "gates": {
+          "(3, 3)": false
+        }
+      },
+      {
+        "player": [
+          1,
+          1,
+          "right"
+        ],
+        "enemies": [
+          [
+            5,
+            1,
+            "left",
+            "red_mummy"
+          ],
+          [
+            5,
+            2,
+            "left",
+            "red_scorpion"
+          ]
+        ],
+        "keys": [
+          [
+            3,
+            3
+          ]
+        ],
+        "gates": {
+          "(3, 3)": false
+        }
+      },
+      {
+        "player": [
+          1,
+          2,
+          "right"
+        ],
+        "enemies": [
+          [
+            5,
+            2,
+            "right",
+            "red_mummy"
           ]
         ],
         "keys": [

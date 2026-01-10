@@ -1,0 +1,125 @@
+{
+  "player_info": {
+    "username": "skibidi",
+    "password": "11111",
+    "score": 0,
+    "skin": "explorer",
+    "owned_skins": [
+      "explorer"
+    ]
+  },
+  "classic": {},
+  "adventure": {
+    "game_state": {
+      "difficulty": "easy",
+      "impossible_mode": false,
+      "grid_size": 6,
+      "chapter": 1,
+      "level": 1,
+      "player": {
+        "row": 1,
+        "col": 2,
+        "direction": "right"
+      },
+      "enemies": [
+        {
+          "type": "red_mummy",
+          "row": 5,
+          "col": 2,
+          "direction": "down"
+        }
+      ],
+      "goal": {
+        "row": 2,
+        "col": 5
+      },
+      "items": {
+        "keys": [
+          [
+            3,
+            3
+          ]
+        ],
+        "traps": [
+          [
+            1,
+            4
+          ]
+        ],
+        "has_key": false
+      },
+      "gates": {
+        "positions": [
+          [
+            3,
+            3
+          ]
+        ],
+        "states": [
+          false
+        ]
+      }
+    },
+    "map_data": {
+      "size": {
+        "rows": 6,
+        "cols": 6
+      },
+      "tiles": [
+        "......",
+        "..P.T.",
+        ".....E",
+        "...K..",
+        "......",
+        "..R..."
+      ],
+      "walls_v": [
+        "       ",
+        "   |   ",
+        " |  |  ",
+        "       ",
+        "  |  | ",
+        "       "
+      ],
+      "walls_h": [
+        "------",
+        "  -   ",
+        "    - ",
+        "   =  ",
+        " -   -",
+        "------",
+        "------"
+      ],
+      "exit": {
+        "row": 2,
+        "col": 5
+      }
+    },
+    "move_history": [
+      {
+        "player": [
+          1,
+          2,
+          "right"
+        ],
+        "enemies": [
+          [
+            5,
+            2,
+            "down",
+            "red_mummy"
+          ]
+        ],
+        "keys": [
+          [
+            3,
+            3
+          ]
+        ],
+        "gates": {
+          "(3, 3)": false
+        }
+      }
+    ]
+  }
+}

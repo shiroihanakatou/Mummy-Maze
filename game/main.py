@@ -545,6 +545,57 @@ def run_game():
         """Adventure: load level JSON tại assets/map/level{chapter}-{level}.json."""
         nonlocal grid, player, enemies, gamestate, background, current_turn, enemy_turn_idx
 
+        # Prefer loading map from saved adventure data (same behavior as classic continue)
+        try:
+            username = user_session.get("username")
+        except Exception:
+            username = None
+
+        if username:
+            try:
+                save_data = None
+                if user_session.get("is_guest"):
+                    save_data = load_local(username)
+                else:
+                    save_data = load_firebase(username) or load_local(username)
+
+                adv_data = save_data.get("adventure") if isinstance(save_data, dict) else None
+                map_info = adv_data.get("map_data") if isinstance(adv_data, dict) else None
+                game_state_info = adv_data.get("game_state") if isinstance(adv_data, dict) else None
+
+                if map_info and (not game_state_info or (game_state_info.get("chapter") == chapter and game_state_info.get("level") == level)):
+                    rows = map_info.get("size", {}).get("rows")
+                    cols = map_info.get("size", {}).get("cols")
+                    tiles = map_info.get("tiles")
+                    walls_v = map_info.get("walls_v")
+                    walls_h = map_info.get("walls_h")
+
+                    # Handle both old (rows/cols) and new (row/col) exit format
+                    exit_pos = None
+                    if "exit" in map_info:
+                        exit_info = map_info["exit"]
+                        if "row" in exit_info and "col" in exit_info:
+                            exit_pos = (exit_info["row"], exit_info["col"])
+                        elif "rows" in exit_info and "cols" in exit_info:
+                            exit_pos = (exit_info["rows"], exit_info["cols"])
+
+                    if rows and cols and tiles is not None and walls_v is not None and walls_h is not None:
+                        if len(grid) != rows:
+                            _rebuild_by_size(rows)
+
+                        gamestate.state = "PLAYING"
+                        gamestate.chapter = chapter
+                        gamestate.level = level
+                        gamestate.gameover = False
+
+                        background = _load_floor()
+                        apply_map_to_grid(rows, cols, tiles, walls_v, walls_h, grid, player, enemies, gamestate, exit_pos=exit_pos)
+                        debug_log(f"[adventure] loaded map from save: ch={chapter} lv={level} size={rows}")
+                        return True
+            except Exception as ex:
+                debug_log("[adventure] load from save map_data failed:", ex)
+
+
         path = ASSETS_DIR / "map" / f"level{chapter}-{level}.json"
         if not path.exists():
             debug_log("[adventure] missing:", path)
@@ -680,12 +731,11 @@ def run_game():
             return False
             
         try:
-            # Serialize per mode (classic includes map_data; adventure does not)
+            # Serialize per mode (classic/adventure include map_data)
             if mode == "classic":
                 state, map_data, move_history = serialize_classic(player, enemies, gamestate, grid)
             else:
-                state, move_history = serialize_adventure(player, enemies, gamestate, grid)
-                map_data = None
+                state, map_data, move_history = serialize_adventure(player, enemies, gamestate, grid)
             
             # Determine target username/profile
             if user_session.get("is_guest"):
@@ -712,6 +762,7 @@ def run_game():
             if mode == "adventure":
                 save_data["adventure"] = {
                     "game_state": state,
+                    "map_data": map_data,
                     "move_history": move_history
                 }
             else:  # classic

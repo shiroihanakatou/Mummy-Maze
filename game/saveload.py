@@ -72,7 +72,7 @@ def serialize_game_state(player, enemies, gamestate, grid, mode: str):
     
     # For classic mode, save map data in level JSON format
     map_data = None
-    if mode == "classic":
+    if mode in ("classic", "adventure"):
         try:
             # Build tiles string (same format as level JSON)
             tiles = []
@@ -205,12 +205,12 @@ def serialize_classic(player, enemies, gamestate, grid):
     return state, map_data, move_history
 
 def serialize_adventure(player, enemies, gamestate, grid):
-    """Serialize adventure mode: returns (state, move_history) without map_data."""
+    """Serialize adventure mode: returns (state, map_data, move_history)."""
     mode = "adventure"
-    state, _map_data_unused, move_history = serialize_game_state(player, enemies, gamestate, grid, mode)
+    state, map_data, move_history = serialize_game_state(player, enemies, gamestate, grid, mode)
     # Debug log summary
     debug_log(f"[SAVE][ADVENTURE] grid_size={state.get('grid_size')} chapter={state.get('chapter')} level={state.get('level')} moves={len(move_history)}")
-    return state, move_history
+    return state, map_data, move_history
 
 def create_save_data(username: str, password: Optional[str], is_guest: bool, score: int,
                      adventure_state=None, classic_state=None, skin: str = "explorer", 
@@ -227,7 +227,7 @@ def create_save_data(username: str, password: Optional[str], is_guest: bool, sco
             "skin": skin,
             "owned_skins": owned_skins
         },
-        "adventure": adventure_state or {"game_state": None, "move_history": []},
+        "adventure": adventure_state or {"game_state": None, "map_data": None, "move_history": []},
         "classic": classic_state or {"game_state": None, "map_data": None, "move_history": []}
     }
 

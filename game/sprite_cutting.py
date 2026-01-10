@@ -3,7 +3,7 @@ import json
 import pygame
 from PIL import Image
 
-IN_PATH = r"D:\pygame\mummy_maze\game\assets\sprite_sheet\40750.png"
+IN_PATH = r"D:\pygame\mummy_maze\game\assets\sprite_sheet\satoru_gojo_pitiko__clash_of_multiverse__by_justoruma_di9wzun (1).png"
 
 DIR_ORDER = ["up", "down", "left", "right"]
 DEFAULT_SCRIPT = [0, 1, 2, 1, 2, 0]
