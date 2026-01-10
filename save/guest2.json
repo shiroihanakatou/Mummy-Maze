@@ -56,23 +56,6 @@
         ],
         "keys": [],
         "gates": {}
-      },
-      {
-        "player": [
-          3,
-          2,
-          "up"
-        ],
-        "enemies": [
-          [
-            2,
-            2,
-            "down",
-            "white_mummy"
-          ]
-        ],
-        "keys": [],
-        "gates": {}
       }
     ]
   },

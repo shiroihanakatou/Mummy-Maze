@@ -3,8 +3,8 @@ import pygame
 from pathlib import Path
 
 ASSETS_DIR = Path(__file__).parent.parent / "assets/screen"
-import pygame
 
+ASSETS_DIR_ = Path(__file__).parent.parent / "assets"
 class StoneButton:
     def __init__(self, image, center_pos):
         self.image = image
@@ -44,23 +44,23 @@ class LoginScreen:
 
         # Nút Login
         self.btn_login_img = pygame.image.load(ASSETS_DIR / "btn_login.png").convert_alpha()
-        self.btn_login_img = pygame.transform.smoothscale(self.btn_login_img, (280, 120))
+        self.btn_login_img = pygame.transform.smoothscale(self.btn_login_img, (225, 72))
         self.login_button = StoneButton(self.btn_login_img, (center_x - 110, center_y + 72))
 
         # Nút Register
         self.btn_register_img = pygame.image.load(ASSETS_DIR / "btn_register.png").convert_alpha()
-        self.btn_register_img = pygame.transform.smoothscale(self.btn_register_img, (280, 120))
+        self.btn_register_img = pygame.transform.smoothscale(self.btn_register_img, (225, 72))
         self.register_button = StoneButton(self.btn_register_img, (center_x + 110, center_y + 72))
 
         # Nút Guest
         self.btn_guest_img = pygame.image.load(ASSETS_DIR / "btn_guest.png").convert_alpha()
-        self.btn_guest_img = pygame.transform.smoothscale(self.btn_guest_img, (220, 120))
-        self.guest_button = StoneButton(self.btn_guest_img, (center_x - 105, center_y + 175))
+        self.btn_guest_img = pygame.transform.smoothscale(self.btn_guest_img, (180, 72))
+        self.guest_button = StoneButton(self.btn_guest_img, (center_x - 105, center_y + 171))
 
         # Nút Exit (Tương ứng load_guest_btn trong return)
         self.btn_exit_img = pygame.image.load(ASSETS_DIR / "btn_exit.png").convert_alpha()
-        self.btn_exit_img = pygame.transform.smoothscale(self.btn_exit_img, (220, 120))
-        self.exit_button = StoneButton(self.btn_exit_img, (center_x + 105, center_y + 175))
+        self.btn_exit_img = pygame.transform.smoothscale(self.btn_exit_img, (180, 72))
+        self.exit_button = StoneButton(self.btn_exit_img, (center_x + 105, center_y + 171))
 
         
         self.username_input = ""
@@ -160,20 +160,20 @@ class LoginScreen:
         self.input_boxes["username_box"] = pygame.Rect(0, 0, 432, 48)
         self.input_boxes["username_box"].center = (center_x-3, center_y - 104)
         if self.active_input == "username":
-            pygame.draw.rect(surface, (255, 215, 0), self.input_boxes["username_box"], 2)
+            pygame.draw.rect(surface, (255, 215, 0), self.input_boxes["username_box"], 2, border_radius=5)
 
         # Ô Passcreen_widthord
         self.input_boxes["passcreen_widthord_box"] = pygame.Rect(0, 0, 432, 48)
         self.input_boxes["passcreen_widthord_box"].center = (center_x-3, center_y - 13)
         if self.active_input == "passcreen_widthord":
-            pygame.draw.rect(surface, (255, 215, 0), self.input_boxes["passcreen_widthord_box"], 2)
+            pygame.draw.rect(surface, (255, 215, 0), self.input_boxes["passcreen_widthord_box"], 2, border_radius=5)
 
         # Hiển thị nội dung text nhập liệu
-        username_text = self.font_normal.render(self.username_input, True, (255, 255, 255))
+        username_text = self.font_normal.render(self.username_input, True, (255, 215, 0))
         surface.blit(username_text, (self.input_boxes["username_box"].left + 15, self.input_boxes["username_box"].top + 5))
         
         pwd_display = "*" * len(self.passcreen_widthord_input)
-        passcreen_widthord_text = self.font_normal.render(pwd_display, True, (255, 255, 255))
+        passcreen_widthord_text = self.font_normal.render(pwd_display, True, (250, 215, 0))
         surface.blit(passcreen_widthord_text, (self.input_boxes["passcreen_widthord_box"].left + 15, self.input_boxes["passcreen_widthord_box"].top + 10))
 
         # 4. Tính toán và vẽ các nút bấm bằng ẢNH
@@ -184,8 +184,8 @@ class LoginScreen:
         exit_btn = self.exit_button.draw(surface, mouse_pos)
         # 5. Vẽ thông báo lỗi
         if self.error_message:
-            error_text = self.font_small.render(self.error_message, True, (255, 100, 100))
-            surface.blit(error_text, (center_x - 200, center_y + 45))
+            error_text = self.font_small.render(self.error_message, True, (255, 50, 50))
+            surface.blit(error_text, (center_x - 220, center_y + 14))
 
         # --- GIỮ NGUYÊN RETURN NHƯ CODE CŨ CỦA BẠN ---
         return {
@@ -231,20 +231,22 @@ class LoginScreen:
         return self.username_input, self.passcreen_widthord_input
 
 
+
+
 class RegisterScreen:
-    
+    """Màn hình đăng ký phong cách bảng đá Ai Cập cổ đại"""
     
     def __init__(self, sw, sh):
         cx, cy = sw // 2, sh // 2
         
-        # --- DỮ LIỆU NHẬP LIỆU (Giữ nguyên tên biến của bạn) ---
+        # --- DỮ LIỆU NHẬP LIỆU (Giữ nguyên tên biến gốc) ---
         self.username_input = ""
-        self.passcreen_widthord_input = "" # Password
-        self.confirm_passcreen_widthord_input = "" # Confirm Password
+        self.passcreen_widthord_input = "" 
+        self.confirm_passcreen_widthord_input = ""
         self.active_input = None
         self.error_message = ""
         
-        # --- FONTS (Sử dụng style giống Guest) ---
+        # --- FONTS (Style giống Guest) ---
         self.font_title = pygame.font.SysFont("Georgia", 32, bold=True)
         self.font_label = pygame.font.SysFont("Verdana", 20, bold=True)
         self.font_text = pygame.font.SysFont("Verdana", 18)
@@ -252,55 +254,64 @@ class RegisterScreen:
 
         # --- TẢI TÀI NGUYÊN ---
         try:
-            # Khung bảng đá lớn
-            raw_frame = pygame.image.load(ASSETS_DIR / "register_frame.png").convert_alpha()
-            self.frame_img = pygame.transform.smoothscale(raw_frame, (560, 620))
+            # Tải ảnh bảng đá mẫu mới nhất (image_53d59e.jpg)
+            self.bg_img = pygame.image.load(ASSETS_DIR / "register_frame.png").convert_alpha()
+            self.bg_img = pygame.transform.smoothscale(self.bg_img, (600, 600))
             
-            # Nút đá
-            raw_btn = pygame.image.load(ASSETS_DIR / "btn_stone.png").convert_alpha()
-            self.btn_img = pygame.transform.smoothscale(raw_btn, (180, 55))
+            # Tải ảnh các nút đã có sẵn chữ
+            img_reg = pygame.image.load(ASSETS_DIR / "btn_register.png").convert_alpha()
+            self.reg_btn_img = pygame.transform.smoothscale(img_reg, (153, 63))
+            
+            img_back = pygame.image.load(ASSETS_DIR / "btn_back.png").convert_alpha()
+            self.back_btn_img = pygame.transform.smoothscale(img_back, (153, 63))
         except:
-            self.frame_img = pygame.Surface((560, 620)); self.frame_img.fill((160, 120, 70))
-            self.btn_img = pygame.Surface((180, 55)); self.btn_img.fill((100, 100, 100))
+            self.bg_img = pygame.Surface((600, 600)); self.bg_img.fill((160, 120, 70))
+            self.reg_btn_img = pygame.Surface((160, 50)); self.reg_btn_img.fill((100, 150, 100))
+            self.back_btn_img = pygame.Surface((160, 50)); self.back_btn_img.fill((100, 100, 100))
 
-        self.frame_rect = self.frame_img.get_rect(center=(cx, cy))
+        self.bg_rect = self.bg_img.get_rect(center=(cx, cy))
 
-        # --- KHỞI TẠO ĐỐI TƯỢNG NÚT BẤM ---
-        # Vị trí nút Register và Back ở cuối bảng đá
-        self.register_button = StoneButton(self.btn_img, (cx - 110, cy + 230))
-        self.back_button = StoneButton(self.btn_img, (cx + 110, cy + 230))
+        # --- TỌA ĐỘ Ô NHẬP (Căn khớp với hốc đá trên ảnh image_53d59e.jpg) ---
+        # Tọa độ Y được căn chỉnh để chữ nằm lọt vào 3 ô đen trên ảnh
+        self.input_boxes = {
+            "username_box": pygame.Rect(cx - 210, cy - 103, 414, 36),
+            "passcreen_widthord_box": pygame.Rect(cx - 210, cy - 29, 414, 36),
+            "confirm_passcreen_widthord_box": pygame.Rect(cx - 210, cy + 46, 414, 36)
+        }
 
-        self.input_boxes = {}
-
+        # Khởi tạo nút StoneButton (Sử dụng ảnh đã có chữ)
+        self.register_button = StoneButton(self.reg_btn_img, (cx - 100, cy + 140))
+        self.back_button = StoneButton(self.back_btn_img, (cx + 100, cy + 140))
+        
     def handle_event(self, event, button_rects=None):
-        """Xử lý sự kiện bàn phím và chuột"""
+        """Xử lý sự kiện (Giữ nguyên logic của bạn)"""
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_TAB:
-                # Chuyển đổi giữa các ô
-                order = ["username", "passcreen_widthord", "confirm"]
+                # Chuyển đổi giữa các ô với tên biến gốc
+                order = ["username", "passcreen_widthord", "confirm_passcreen_widthord"]
                 idx = order.index(self.active_input) if self.active_input in order else -1
                 self.active_input = order[(idx + 1) % len(order)]
             
-            elif event.key == pygame.K_BACKSPACE:
-                if self.active_input == "username": self.username_input = self.username_input[:-1]
-                elif self.active_input == "passcreen_widthord": self.passcreen_widthord_input = self.passcreen_widthord_input[:-1]
-                elif self.active_input == "confirm": self.confirm_passcreen_widthord_input = self.confirm_passcreen_widthord_input[:-1]
+            elif event.key == pygame.K_BACKSPACE and self.active_input:
+                attr = f"{self.active_input}_input"
+                setattr(self, attr, getattr(self, attr)[:-1])
                 self.error_message = ""
 
             elif event.key == pygame.K_RETURN:
                 return "register"
 
             elif event.unicode.isprintable() and self.active_input:
-                if len(getattr(self, f"{self.active_input}_input")) < 20:
-                    setattr(self, f"{self.active_input}_input", getattr(self, f"{self.active_input}_input") + event.unicode)
+                attr = f"{self.active_input}_input"
+                if len(getattr(self, attr)) < 20:
+                    setattr(self, attr, getattr(self, attr) + event.unicode)
                 self.error_message = ""
 
         elif event.type == pygame.MOUSEBUTTONDOWN:
-            # Kiểm tra click vào nút bấm (Sử dụng StoneButton.is_clicked)
+            # Kiểm tra click vào nút bấm
             if self.register_button.is_clicked(event.pos): return "register"
             if self.back_button.is_clicked(event.pos): return "back"
 
-            # Kiểm tra chọn ô nhập liệu
+            # Kiểm tra chọn ô nhập liệu (khớp với hốc đá)
             for name, rect in self.input_boxes.items():
                 if rect.collidepoint(event.pos):
                     self.active_input = name.replace("_box", "")
@@ -310,73 +321,57 @@ class RegisterScreen:
         return None
 
     def draw(self, surface, sw, sh, mouse_pos):
-        """Vẽ giao diện Register Stone Style"""
-        cx, cy = self.frame_rect.centerx, self.frame_rect.centery
+        """Vẽ giao diện bảng đá với chữ đè lên các hốc đá"""
+        cx, cy = self.bg_rect.centerx, self.bg_rect.centery
         
         # 1. Vẽ lớp phủ tối và Bảng đá nền
         overlay = pygame.Surface((sw, sh))
         overlay.set_alpha(180); overlay.fill((0, 0, 0))
         surface.blit(overlay, (0, 0))
-        surface.blit(self.frame_img, self.frame_rect)
+        surface.blit(self.bg_img, self.bg_rect)
 
-        # 2. Tiêu đề (Màu nâu đậm Ai Cập)
-        title_s = self.font_title.render("CREATE ACCOUNT", True, (40, 25, 10))
-        surface.blit(title_s, title_s.get_rect(center=(cx, self.frame_rect.top + 70)))
+        # 2. Vẽ nội dung văn bản nhập liệu (Đè lên hốc đá)
+        field_keys = ["username", "passcreen_widthord", "confirm_passcreen_widthord"]
 
-        # 3. Vẽ các nhãn và ô nhập liệu
-        # (Username, Password, Confirm)
-        field_configs = [
-            ("Username:", "username", -100),
-            ("Password:", "passcreen_widthord", -5),
-            ("Confirm Password:", "confirm_passcreen_widthord", 90)
-        ]
-
-        for label, key, offset_y in field_configs:
-            # Nhãn chữ
-            lbl_s = self.font_label.render(label, True, (60, 40, 20))
-            surface.blit(lbl_s, (cx - 200, cy + offset_y - 30))
+        for key in field_keys:
+            rect = self.input_boxes[f"{key}_box"]
             
-            # Ô nhập liệu (Dạng đục sâu vào đá)
-            rect = pygame.Rect(cx - 200, cy + offset_y, 400, 45)
-            self.input_boxes[f"{key}_box"] = rect
+            # Vẽ viền vàng mỏng khi ô đó đang được chọn (Active)
+            if self.active_input == key:
+                pygame.draw.rect(surface, (255, 215, 0), rect, 2, border_radius=5)
             
-            # Màu viền đổi khi active
-            border_color = (255, 215, 0) if self.active_input == key else (80, 60, 40)
-            pygame.draw.rect(surface, (50, 40, 30), rect, border_radius=5) # Nền tối ô nhập
-            pygame.draw.rect(surface, border_color, rect, 2, border_radius=5) # Viền
+            # Lấy giá trị và hiển thị dấu * cho mật khẩu
+            val = getattr(self, f"{key}_input")
+            display_val = val if key == "username" else "*" * len(val)
             
-            # Chữ hiển thị
-            val = self.username_input if key == "username" else "*" * len(getattr(self, f"{key}_input"))
-            txt_s = self.font_text.render(val, True, (250, 240, 220))
-            surface.blit(txt_s, (rect.x + 10, rect.y + 10))
+            # Chữ màu trắng kem nổi bật trên nền đá tối
+            txt_s = self.font_text.render(display_val, True, (255, 215, 0))
+            surface.blit(txt_s, (rect.x + 15, rect.y + 5))
 
-        # 4. Vẽ thông báo lỗi
+        # 3. Vẽ thông báo lỗi (Màu đỏ sậm)
         if self.error_message:
-            err_s = self.font_hint.render(self.error_message, True, (200, 50, 50))
-            surface.blit(err_s, (cx - 200, cy + 150))
+            err_s = self.font_hint.render(self.error_message, True, (255, 50, 50))
+            surface.blit(err_s, (cx - 210, cy + 84))
 
-        # 5. Vẽ các nút đá
+        # 4. Vẽ các nút đá (Ảnh đã có sẵn chữ)
         reg_rect = self.register_button.draw(surface, mouse_pos)
         back_rect = self.back_button.draw(surface, mouse_pos)
 
-        # Chữ trên nút
-        reg_txt = self.font_label.render("Register", True, (255, 255, 255))
-        surface.blit(reg_txt, reg_txt.get_rect(center=reg_rect.center))
-        
-        back_txt = self.font_label.render("Back", True, (255, 215, 0)) # Chữ vàng cho Back
-        surface.blit(back_txt, back_txt.get_rect(center=back_rect.center))
-
+        # Trả về các Rect để main.py nhận diện click
         return {"register_btn": reg_rect, "back_btn": back_rect}
-
+    def set_error(self, message):
+        """Set error message"""
+        self.error_message = message
+    
     def reset(self):
+        """Reset form"""
         self.username_input = ""; self.passcreen_widthord_input = ""; self.confirm_passcreen_widthord_input = ""
         self.active_input = None; self.error_message = ""
+        
     def get_credentials(self):
-   
-         # Trả về đúng tên các biến gốc mà bạn muốn giữ
+        """Trả về đúng tên các biến gốc"""
         return self.username_input, self.passcreen_widthord_input, self.confirm_passcreen_widthord_input
-import pygame
-
+    
 class LeaderboardScreen:
     """Giao diện bảng điểm cao phong cách bảng đá cổ đại"""
     
@@ -386,9 +381,9 @@ class LeaderboardScreen:
         self.scroll_offset = 0
         
         # --- THIẾT LẬP STYLE (Đồng bộ với Guest/Register) ---
-        self.font_large = pygame.font.SysFont("Georgia", 36, bold=True)
-        self.font_normal = pygame.font.SysFont("Verdana", 20, bold=True)
-        self.font_small = pygame.font.SysFont("Verdana", 14, italic=True)
+        self.font_large = pygame.font.Font(str(ASSETS_DIR_ / "font" / "romeo.ttf"), 54)
+        self.font_normal = pygame.font.Font(str(ASSETS_DIR_ / "font" / "romeo.ttf"), 36)
+        self.font_small = pygame.font.Font(str(ASSETS_DIR_ / "font" / "romeo.ttf"), 25)
         
         # Tải tài nguyên hình ảnh
         try:
@@ -481,7 +476,7 @@ class LeaderboardScreen:
         
         # 6. Chỉ dẫn và Nút Back
         hint = self.font_small.render("Press ESC to go back | UP/DOWN to scroll", True, (80, 60, 40))
-        surface.blit(hint, (center_x - 140, self.frame_rect.bottom - 45))
+        surface.blit(hint, (center_x - 180, self.frame_rect.bottom - 36))
         
         # Vẽ nút Back Stone Style
         back_rect = self.back_button.draw(surface, mouse_pos)
@@ -496,10 +491,9 @@ class GuestLoadScreen:
     def __init__(self):
         # --- CẤU HÌNH FONT VÀ MÀU SẮC THEO ẢNH MẪU ---
         # Sử dụng font có chân (Serif) đậm và lớn cho tiêu đề
-        self.font_title = pygame.font.SysFont("Georgia", 38, bold=True)
+        self.font_title = pygame.font.Font(str(ASSETS_DIR_ / "font" / "romeo.ttf"), 45)
         # Sử dụng font rõ ràng, đậm cho các nút
-        self.font_button = pygame.font.SysFont("Verdana", 20, bold=True)
-        
+        self.font_button = pygame.font.Font(str(ASSETS_DIR_ / "font" / "romeo.ttf"), 27)
         # Bảng màu được trích xuất từ ảnh mẫu
         self.colors = {
             # Nền tối bán trong suốt phía sau bảng đá
@@ -520,8 +514,13 @@ class GuestLoadScreen:
             # Màu sáng tạo viền nổi (Vàng cát sáng)
             "stone_highlight": (210, 170, 110),
             # Màu nền của bảng đá lớn (Tối hơn mặt nút một chút)
-            "panel_bg": (160, 120, 70)
-        }
+            "panel_bg": (160, 120, 70),
+            "text_input": (255, 248, 220),   # Màu trắng kem (Cornsilk) - trông giống màu đá sáng
+            "text_active": (255, 215, 0),    # Vàng kim khi đang gõ
+            "text_error": (190, 30, 30),     # Đỏ sậm (màu cảnh báo cổ điển)
+            "input_bg": (40, 30, 20),        # Màu nền tối sâu trong hốc đá
+            "border_active": (218, 165, 32)  # Màu vàng đồng (Goldenrod)
+            }
 
         self.profiles = []
         self.profile_rects = {}
@@ -647,207 +646,135 @@ class GuestLoadScreen:
         return None
 
 
+
 class SaveDialog:
-    """Save dialog screen similar to LoginScreen/GuestLoadScreen"""
+    """Màn hình thông báo phong cách phiến đá Ai Cập"""
     
-    def __init__(self):
-        self.font_large = pygame.font.SysFont("Verdana", 36)
-        self.font_normal = pygame.font.SysFont("Verdana", 24)
-        self.font_small = pygame.font.SysFont("Verdana", 18)
-        
-        self.dialog_type = "save_before_exit"  # "save_before_exit", "back_confirm", "quit_confirm"
-        self.phase = "confirm"  # "confirm" or "select_profile"
+    def __init__(self, sw, sh):
+        # --- THIẾT LẬP STYLE ---
+        self.font_title = pygame.font.Font(str(ASSETS_DIR_ / "font" / "romeo.ttf"), 63)
+        self.font_msg = pygame.font.Font(str(ASSETS_DIR_ / "font" / "romeo.ttf"), 45)
+        self.font_btn = pygame.font.Font(str(ASSETS_DIR_ / "font" / "romeo.ttf"), 30)
+        self.colors = {
+            "panel_bg": (180, 140, 90),     # Nâu vàng cát
+            "panel_border": (100, 70, 40), # Nâu đất đậm
+            "text_gold": (255, 215, 0),    # Vàng kim
+            "text_ivory": (250, 245, 230), # Trắng kem
+            
+            "btn_yes": (60, 120, 60),      # Xanh lá đá (Cho Yes)
+            "btn_no": (140, 60, 60),       # Đỏ gạch đá (Cho No)
+            "btn_stone": (120, 100, 80),   # Xám nâu (Cho Profile/Back)
+            "btn_shadow": (60, 40, 20)     # Bóng đổ khối
+        }
+
+        self.dialog_type = "save_before_exit"
+        self.phase = "confirm"
         self.message = ""
         self.profiles = []
         self.selected_profile = None
-        self.profile_rects = {}
-        self.screen_width = 1280
-        self.screen_height = 800
         
     def set_state(self, dialog_type, message, profiles=None):
-        """Configure the dialog"""
         self.dialog_type = dialog_type
         self.message = message
         self.phase = "confirm"
         self.profiles = profiles or []
         self.selected_profile = self.profiles[0] if self.profiles else None
-        self.profile_rects = {}
+
+    def _draw_stone_button(self, surface, rect, color, text, is_hover):
+        """Vẽ nút dạng khối đá nổi 3D"""
+        main_color = [min(255, c + 30) for c in color] if is_hover else color
+        shadow_color = self.colors["btn_shadow"]
         
+        # 1. Vẽ bóng dày phía dưới (tạo độ khối)
+        pygame.draw.rect(surface, shadow_color, rect.move(0, 4), border_radius=5)
+        # 2. Vẽ mặt nút
+        pygame.draw.rect(surface, main_color, rect, border_radius=5)
+        # 3. Vẽ viền nổi
+        pygame.draw.rect(surface, self.colors["text_gold"] if is_hover else shadow_color, rect, 2, border_radius=5)
+        
+        # 4. Vẽ chữ (có bóng đổ nhẹ cho rõ)
+        txt_shadow = self.font_btn.render(text, True, (20, 10, 5))
+        txt_s = self.font_btn.render(text, True, self.colors["text_ivory"])
+        t_rect = txt_s.get_rect(center=rect.center)
+        surface.blit(txt_shadow, (t_rect.x + 1, t_rect.y + 1))
+        surface.blit(txt_s, t_rect)
+
+    def draw(self, surface, screen_width, screen_height, mouse_pos=None):
+        """Vẽ Dialog bảng đá và trả về Rects"""
+        # 1. Lớp phủ mờ tối
+        overlay = pygame.Surface((screen_width, screen_height))
+        overlay.set_alpha(200); overlay.fill((0, 0, 0))
+        surface.blit(overlay, (0, 0))
+        
+        # 2. Khung bảng đá Dialog
+        dw = 500
+        dh = 400 if self.phase == "confirm" else 450
+        dx = (screen_width - dw) // 2
+        dy = (screen_height - dh) // 2
+        panel_rect = pygame.Rect(dx, dy, dw, dh)
+        
+        # Vẽ nền đá và viền trang trí
+        pygame.draw.rect(surface, self.colors["panel_bg"], panel_rect, border_radius=10)
+        pygame.draw.rect(surface, self.colors["panel_border"], panel_rect, 5, border_radius=10)
+        pygame.draw.rect(surface, self.colors["panel_border"], panel_rect.inflate(-15, -15), 2, border_radius=8)
+
+        button_rects = {}
+        cx = screen_width // 2
+        y_offset = dy + 50
+        
+        if self.phase == "confirm":
+            # --- TITLE (Vàng kim) ---
+            title_str = "Save?" if self.dialog_type == "save_before_exit" else "Quit?"
+            title_s = self.font_title.render(title_str, True, self.colors["text_gold"])
+            surface.blit(title_s, title_s.get_rect(center=(cx, y_offset)))
+            
+            # --- MESSAGE (Trắng kem) ---
+            y_offset += 70
+            msg_s = self.font_msg.render(self.message, True, self.colors["text_ivory"])
+            surface.blit(msg_s, msg_s.get_rect(center=(cx, y_offset)))
+            
+            # --- YES/NO BUTTONS ---
+            y_offset += 100
+            bw, bh = 140, 55
+            yes_r = pygame.Rect(cx - 160, y_offset, bw, bh)
+            no_r = pygame.Rect(cx + 20, y_offset, bw, bh)
+            
+            self._draw_stone_button(surface, yes_r, self.colors["btn_yes"], "YES", mouse_pos and yes_r.collidepoint(mouse_pos))
+            self._draw_stone_button(surface, no_r, self.colors["btn_no"], "NO", mouse_pos and no_r.collidepoint(mouse_pos))
+            
+            button_rects["yes"] = yes_r
+            button_rects["no"] = no_r
+            
+        elif self.phase == "select_profile":
+            # --- TITLE ---
+            title_s = self.font_title.render("SELECT PROFILE", True, self.colors["text_gold"])
+            surface.blit(title_s, title_s.get_rect(center=(cx, y_offset)))
+            
+            y_offset += 60
+            bw, bh = 350, 50
+            for profile in self.profiles:
+                p_rect = pygame.Rect(cx - bw // 2, y_offset, bw, bh)
+                is_h = mouse_pos and p_rect.collidepoint(mouse_pos)
+                self._draw_stone_button(surface, p_rect, self.colors["btn_stone"], profile, is_h)
+                button_rects[profile] = p_rect
+                y_offset += bh + 15
+            
+            # --- BACK BUTTON ---
+            y_offset += 10
+            back_r = pygame.Rect(cx - bw // 2, y_offset, bw, bh)
+            self._draw_stone_button(surface, back_r, (80, 80, 80), "BACK", mouse_pos and back_r.collidepoint(mouse_pos))
+            button_rects["back"] = back_r
+        
+        return button_rects
+
     def handle_event(self, event):
-        """Handle input events. Returns action or None"""
+        """Giữ nguyên logic phím ESC"""
         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
             return "cancel"
         return None
-    
-    def _calculate_button_rects(self, screen_width, screen_height):
-        """Calculate button rects without drawing - used for event handling"""
-        dialog_width = min(500, screen_width // 2.5)
-        dialog_height = min(400, screen_height // 2)
-        dialog_x = (screen_width - dialog_width) // 2
-        dialog_y = (screen_height - dialog_height) // 2
-        
-        button_rects = {}
-        y_offset = dialog_y + 30
-        
-        if self.phase == "confirm":
-            # Match draw() spacing exactly
-            y_offset += 50  # Title space
-            y_offset += 80  # Message space + button offset
-            
-            button_width = 120
-            button_height = 50
-            
-            yes_rect = pygame.Rect(dialog_x + dialog_width // 4 - button_width // 2, y_offset, button_width, button_height)
-            no_rect = pygame.Rect(dialog_x + 3 * dialog_width // 4 - button_width // 2, y_offset, button_width, button_height)
-            
-            button_rects["yes"] = yes_rect
-            button_rects["no"] = no_rect
-            
-        elif self.phase == "select_profile":
-            y_offset += 60
-            button_width = 280
-            button_height = 50
-            
-            for profile in self.profiles:
-                profile_rect = pygame.Rect(
-                    dialog_x + (dialog_width - button_width) // 2,
-                    y_offset,
-                    button_width,
-                    button_height
-                )
-                button_rects[profile] = profile_rect
-                y_offset += button_height + 10
-            
-            # Back button
-            back_rect = pygame.Rect(
-                dialog_x + (dialog_width - button_width) // 2,
-                y_offset,
-                button_width,
-                button_height
-            )
-            button_rects["back"] = back_rect
-        
-        return button_rects
-        
-    def draw(self, surface, screen_width, screen_height, mouse_pos=None):
-        """Draw the dialog and return button rects"""
-        self.screen_width = screen_width
-        self.screen_height = screen_height
-        
-        dialog_width = min(500, screen_width // 2.5)
-        dialog_height = min(400, screen_height // 2)
-        dialog_x = (screen_width - dialog_width) // 2
-        dialog_y = (screen_height - dialog_height) // 2
-        
-        # Semi-transparent overlay
-        overlay = pygame.Surface((screen_width, screen_height))
-        overlay.set_alpha(128)
-        overlay.fill((0, 0, 0))
-        surface.blit(overlay, (0, 0))
-        
-        # Dialog box
-        pygame.draw.rect(surface, (50, 50, 50), (dialog_x, dialog_y, dialog_width, dialog_height))
-        pygame.draw.rect(surface, (100, 150, 200), (dialog_x, dialog_y, dialog_width, dialog_height), 3)
-        
-        button_rects = {}
-        y_offset = dialog_y + 30
-        
-        if self.phase == "confirm":
-            # Title
-            title_text = self.font_large.render(
-                "Save?" if self.dialog_type == "save_before_exit" else 
-                "Quit?" if self.dialog_type == "quit_confirm" else "Back?",
-                True, (255, 255, 255)
-            )
-            title_rect = title_text.get_rect(center=(screen_width // 2, y_offset))
-            surface.blit(title_text, title_rect)
-            
-            # Message
-            y_offset += 50
-            msg_text = self.font_normal.render(self.message, True, (200, 200, 200))
-            msg_rect = msg_text.get_rect(center=(screen_width // 2, y_offset))
-            surface.blit(msg_text, msg_rect)
-            
-            # Buttons
-            button_width = 120
-            button_height = 50
-            y_offset += 80
-            
-            yes_rect = pygame.Rect(dialog_x + dialog_width // 4 - button_width // 2, y_offset, button_width, button_height)
-            no_rect = pygame.Rect(dialog_x + 3 * dialog_width // 4 - button_width // 2, y_offset, button_width, button_height)
-            
-            # Yes button with hover effect
-            yes_hover = mouse_pos and yes_rect.collidepoint(mouse_pos)
-            pygame.draw.rect(surface, (70, 200, 70) if yes_hover else (50, 150, 50), yes_rect)
-            pygame.draw.rect(surface, (150, 255, 150) if yes_hover else (100, 200, 100), yes_rect, 2)
-            yes_text = self.font_normal.render("Yes", True, (255, 255, 255))
-            surface.blit(yes_text, yes_text.get_rect(center=yes_rect.center))
-            button_rects["yes"] = yes_rect
-            
-            # No button with hover effect
-            no_hover = mouse_pos and no_rect.collidepoint(mouse_pos)
-            pygame.draw.rect(surface, (200, 70, 70) if no_hover else (150, 50, 50), no_rect)
-            pygame.draw.rect(surface, (255, 150, 150) if no_hover else (200, 100, 100), no_rect, 2)
-            no_text = self.font_normal.render("No", True, (255, 255, 255))
-            surface.blit(no_text, no_text.get_rect(center=no_rect.center))
-            button_rects["no"] = no_rect
-            
-        elif self.phase == "select_profile":
-            # Title
-            title_text = self.font_large.render("Select Profile", True, (255, 255, 255))
-            title_rect = title_text.get_rect(center=(screen_width // 2, y_offset))
-            surface.blit(title_text, title_rect)
-            
-            # Profile buttons
-            y_offset += 60
-            button_width = 280
-            button_height = 50
-            
-            for profile in self.profiles:
-                profile_rect = pygame.Rect(
-                    dialog_x + (dialog_width - button_width) // 2,
-                    y_offset,
-                    button_width,
-                    button_height
-                )
-                
-                is_selected = profile == self.selected_profile
-                is_hover = mouse_pos and profile_rect.collidepoint(mouse_pos)
-                
-                # Brighter colors on hover
-                if is_hover:
-                    pygame.draw.rect(surface, (100, 150, 200), profile_rect)
-                elif is_selected:
-                    pygame.draw.rect(surface, (80, 120, 160), profile_rect)
-                else:
-                    pygame.draw.rect(surface, (50, 80, 130), profile_rect)
-                    
-                pygame.draw.rect(surface, (200, 255, 255) if is_hover else (150, 200, 255) if is_selected else (100, 150, 200), profile_rect, 2)
-                
-                profile_text = self.font_normal.render(profile, True, (255, 255, 255))
-                surface.blit(profile_text, profile_text.get_rect(center=profile_rect.center))
-                
-                button_rects[profile] = profile_rect
-                y_offset += button_height + 10
-            
-            # Back button with hover
-            back_rect = pygame.Rect(
-                dialog_x + (dialog_width - button_width) // 2,
-                y_offset,
-                button_width,
-                button_height
-            )
-            back_hover = mouse_pos and back_rect.collidepoint(mouse_pos)
-            pygame.draw.rect(surface, (180, 180, 180) if back_hover else (150, 150, 150), back_rect)
-            pygame.draw.rect(surface, (220, 220, 220) if back_hover else (180, 180, 180), back_rect, 2)
-            back_text = self.font_normal.render("Back", True, (255, 255, 255))
-            surface.blit(back_text, back_text.get_rect(center=back_rect.center))
-            button_rects["back"] = back_rect
-        
-        return button_rects
-    
+
     def get_clicked(self, mouse_pos, button_rects):
-        """Return clicked button name or None"""
+        """Kiểm tra click chuẩn xác"""
         for name, rect in button_rects.items():
             if rect.collidepoint(mouse_pos):
                 return name

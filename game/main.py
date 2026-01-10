@@ -129,7 +129,7 @@ def run_game():
     }
 
     # Save dialog - new class-based implementation
-    save_dialog_screen = SaveDialog()
+    save_dialog_screen = SaveDialog(SCREEN_WIDTH, SCREEN_HEIGHT)
     
     # Old save dialog state (keeping for backward compatibility during transition)
     save_dialog = {
@@ -930,7 +930,7 @@ def run_game():
             # Save dialog handling - new class-based implementation
             if save_dialog["active"]:
                 if e.type == pygame.MOUSEBUTTONDOWN:
-                    button_rects = save_dialog_screen._calculate_button_rects(SCREEN_WIDTH, SCREEN_HEIGHT)
+                    button_rects = save_dialog_screen.draw(surface,SCREEN_WIDTH, SCREEN_HEIGHT, mouse_pos)
                     clicked = save_dialog_screen.get_clicked(mouse_pos, button_rects)
                     
                     debug_log(f"[DIALOG EVENT] Clicked: {clicked}, Type: {save_dialog['dialog_type']}, Phase: {save_dialog_screen.phase}")
