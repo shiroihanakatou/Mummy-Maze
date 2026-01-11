@@ -757,26 +757,12 @@ def path_finding(player, enemy, grid, gamestate, impossible_mode=False):
 
     # Visited as set of tuples for memory efficiency
     # State includes full enemy info (type + position) and order matters
+    visited = {start}
     prev = {}
+    q = deque([start])
     iterations = 0
-
-    # Search budget:
-    # - normal: smaller is fine (state space is tiny)
-    # - impossible: allow more but rely on A* to avoid explosion
-    max_iterations = 1200000 if impossible_mode else 500000
-
-    if impossible_mode:
-        import heapq
-
-        def h_est(r, c):
-            # Admissible heuristic (Manhattan) => A* stays optimal on step count
-            return abs(r - gamestate.goal_row) + abs(c - gamestate.goal_col)
-
-        best_g = {start: 0}
-        heap = [(h_est(player.row, player.col), 0, start)]  # (f, g, state)
-    else:
-        visited = {start}
-        q = deque([start])
+    # Higher limit for impossible mode with more enemies
+    max_iterations = 1000000 if impossible_mode else 500000
 
     def gate_is_open(rh, c, gate_state_tuple):
         if (rh, c) not in gate_index:
@@ -834,13 +820,13 @@ def path_finding(player, enemy, grid, gamestate, impossible_mode=False):
                 best_r, best_c = tr, tc
         return best_r, best_c
 
-    # ---- Impossible-mode speedup: dist map cache (player -> all cells) ----
-    # Cache key: (player_row, player_col, gate_state_tuple)
+    # ---- Impossible mode: distance-map BFS cache (player -> all cells) ----
     dist_cache = {}
     dist_cache_order = deque()
     DIST_CACHE_MAX = 256
 
     def get_player_dist_map(pr, pc, gate_state_tuple):
+        # Cache by (player pos, gate state) because enemy BFS depends only on these
         key = (pr, pc, gate_state_tuple)
         if key in dist_cache:
             return dist_cache[key]
@@ -851,8 +837,8 @@ def path_finding(player, enemy, grid, gamestate, impossible_mode=False):
 
         while dq:
             r, c = dq.popleft()
-            for dname, dr, dc in directions:
-                nxt = can_move(r, c, dname, gate_state_tuple)
+            for name, dr, dc in directions:
+                nxt = can_move(r, c, name, gate_state_tuple)
                 if nxt is None:
                     continue
                 nr, nc = nxt
@@ -867,89 +853,41 @@ def path_finding(player, enemy, grid, gamestate, impossible_mode=False):
             dist_cache.pop(old, None)
         return dist
 
-    # ---- Goal distance map cache (goal -> all cells), used for impossible-mode blocking ----
-    goal_cache = {}
-    goal_cache_order = deque()
-    GOAL_CACHE_MAX = 256
+    def enemy_best_step_bfs(er, ec, tcode, pr, pc, gate_state_tuple):
+        """Impossible mode AI: true shortest path by following a precomputed dist-map.
 
-    def get_goal_dist_map(gate_state_tuple):
-        key = gate_state_tuple
-        if key in goal_cache:
-            return goal_cache[key]
-
-        gr, gc = gamestate.goal_row, gamestate.goal_col
-        dist = [[-1] * COLS for _ in range(ROWS)]
-        dq = deque([(gr, gc)])
-        dist[gr][gc] = 0
-
-        while dq:
-            r, c = dq.popleft()
-            for name, dr, dc in directions:
-                nxt = can_move(r, c, name, gate_state_tuple)
-                if nxt is None:
-                    continue
-                nr, nc = nxt
-                if dist[nr][nc] == -1:
-                    dist[nr][nc] = dist[r][c] + 1
-                    dq.append((nr, nc))
-
-        goal_cache[key] = dist
-        goal_cache_order.append(key)
-        if len(goal_cache_order) > GOAL_CACHE_MAX:
-            old = goal_cache_order.popleft()
-            goal_cache.pop(old, None)
-        return dist
-    def enemy_ranked_moves_impossible(er, ec, tcode, pr, pc, gate_state_tuple):
-        """Candidate next positions ranked (impossible mode).
-
-        This is intentionally conservative: enemies can either chase the player or move to block the goal.
-        Ranking uses two cached distance maps:
-        - distP: distance to player
-        - distG: distance to goal
-
-        Score: (min(distP, distG), distP, distG, direction_order)
+        We build one BFS dist-map from player per (player_pos, gate_state) and let each enemy
+        greedily step to a neighbor with smaller dist. This matches BFS shortest-path while
+        avoiding 'BFS per enemy' overhead.
         """
-        distP = get_player_dist_map(pr, pc, gate_state_tuple)
-        distG = get_goal_dist_map(gate_state_tuple)
+        if er == pr and ec == pc:
+            return er, ec
 
-        BIG = 10**9
+        dist = get_player_dist_map(pr, pc, gate_state_tuple)
+        curd = dist[er][ec]
+        if curd < 0:
+            # Player unreachable (should be rare); fall back to Manhattan to keep behavior stable
+            return enemy_best_step_manhattan(er, ec, tcode, pr, pc, gate_state_tuple)
 
-        if tcode == "W":
+        if tcode == "W":  # white mummy: horizontal priority
             dirs = [("left", 0, -1), ("right", 0, 1), ("up", -1, 0), ("down", 1, 0)]
         else:
             dirs = [("up", -1, 0), ("down", 1, 0), ("left", 0, -1), ("right", 0, 1)]
 
-        dp0 = distP[er][ec]
-        dg0 = distG[er][ec]
-        dp0 = dp0 if dp0 >= 0 else BIG
-        dg0 = dg0 if dg0 >= 0 else BIG
+        best_r, best_c = er, ec
+        best_d = curd
 
-        # Staying is always an option (last tie-break)
-        cand = [((min(dp0, dg0), dp0, dg0, 99), (er, ec))]
-
-        for order_idx, (name, dr, dc) in enumerate(dirs):
+        for name, dr, dc in dirs:
             nxt = can_move(er, ec, name, gate_state_tuple)
             if nxt is None:
                 continue
             nr, nc = nxt
+            d = dist[nr][nc]
+            if d >= 0 and d < best_d:
+                best_d = d
+                best_r, best_c = nr, nc
 
-            # Immediate kill is always top priority
-            if (nr, nc) == (pr, pc):
-                return [(nr, nc), (er, ec)]
-
-            dp = distP[nr][nc]
-            dg = distG[nr][nc]
-            dp = dp if dp >= 0 else BIG
-            dg = dg if dg >= 0 else BIG
-
-            cand.append(((min(dp, dg), dp, dg, order_idx), (nr, nc)))
-
-        cand.sort(key=lambda x: x[0])
-        return [pos for _, pos in cand]
-
-    def enemy_best_step_bfs(er, ec, tcode, pr, pc, gate_state_tuple):
-        """Deterministic enemy step (impossible mode), before collision-avoidance filtering."""
-        return enemy_ranked_moves_impossible(er, ec, tcode, pr, pc, gate_state_tuple)[0]
+        return best_r, best_c
 
     def enemy_best_step(er, ec, tcode, pr, pc, gate_state_tuple):
         """Choose movement strategy based on impossible_mode flag."""
@@ -958,19 +896,13 @@ def path_finding(player, enemy, grid, gamestate, impossible_mode=False):
         else:
             return enemy_best_step_manhattan(er, ec, tcode, pr, pc, gate_state_tuple)
 
-    while (heap if impossible_mode else q):
+    while q:
         iterations += 1
         if iterations > max_iterations:
             # print(f"[BFS] Max iterations ({max_iterations}) reached, aborting search")
             return None
-        if impossible_mode:
-            _, g, cur = heapq.heappop(heap)
-            if g != best_g.get(cur, 10**18):
-                continue
-        else:
-            cur = q.popleft()
-            g = None
-
+        
+        cur = q.popleft()
         p_row, p_col, enemy_state, gate_state = cur
 
         # Goal check
@@ -1011,9 +943,6 @@ def path_finding(player, enemy, grid, gamestate, impossible_mode=False):
 
             stationary = {(r, c): idx for idx, (r, c) in enumerate(positions) if alive[idx]}
             moved_positions = set()
-
-            player_dead = False  # <<< ADD
-
             for idx, (er, ec) in enumerate(positions):
                 if not alive[idx]:
                     continue
@@ -1024,30 +953,13 @@ def path_finding(player, enemy, grid, gamestate, impossible_mode=False):
                     # Leaving current tile
                     stationary.pop((er, ec), None)
 
-                    if impossible_mode:
-                        # In impossible mode, enemies avoid colliding/killing each other.
-                        chosen_r, chosen_c = er, ec
-                        for cand_r, cand_c in enemy_ranked_moves_impossible(er, ec, tcode, np_row, np_col, next_gate_state):
-                            if (cand_r, cand_c) == (np_row, np_col):
-                                chosen_r, chosen_c = cand_r, cand_c
-                                break
-                            if (cand_r, cand_c) in stationary or (cand_r, cand_c) in moved_positions:
-                                continue
-                            chosen_r, chosen_c = cand_r, cand_c
-                            break
-                        nr, nc = chosen_r, chosen_c
-                    else:
-                        nr, nc = enemy_best_step(er, ec, tcode, np_row, np_col, next_gate_state)
+                    nr, nc = enemy_best_step(er, ec, tcode, np_row, np_col, next_gate_state)
                     if (nr, nc) == (er, ec):
                         stationary[(er, ec)] = idx
                         break
 
                     # Collision with stationary enemy: kill the stationary one, move in
                     if (nr, nc) in stationary:
-                        if impossible_mode:
-                            # Conservative: enemies do not suicide/kill each other in impossible mode
-                            stationary[(er, ec)] = idx
-                            break
                         killed_idx = stationary.pop((nr, nc))
                         alive[killed_idx] = False
                     elif (nr, nc) in moved_positions:
@@ -1057,18 +969,7 @@ def path_finding(player, enemy, grid, gamestate, impossible_mode=False):
                     er, ec = nr, nc
                     moved_positions.add((er, ec))
 
-                    # >>> ADD: mid-step death check (SINGLE SOURCE OF TRUTH)
-                    if (er, ec) == (np_row, np_col):
-                        player_dead = True
-                        break
-
-                if player_dead:
-                    break
-
                 positions[idx] = (er, ec)
-
-            if player_dead:
-                continue  # reject this player move, because game would be over immediately
 
 
             # If any alive enemy ends on player -> death
@@ -1083,20 +984,11 @@ def path_finding(player, enemy, grid, gamestate, impossible_mode=False):
             )
 
             nxt_state = (np_row, np_col, next_enemy_state, next_gate_state)
-
-            if impossible_mode:
-                g2 = g + 1
-                if g2 < best_g.get(nxt_state, 10**18):
-                    best_g[nxt_state] = g2
-                    prev[nxt_state] = (cur, name)
-                    f2 = g2 + h_est(np_row, np_col)
-                    heapq.heappush(heap, (f2, g2, nxt_state))
-            else:
-                if nxt_state in visited:
-                    continue
-                visited.add(nxt_state)
-                prev[nxt_state] = (cur, name)
-                q.append(nxt_state)
+            if nxt_state in visited:
+                continue
+            visited.add(nxt_state)
+            prev[nxt_state] = (cur, name)
+            q.append(nxt_state)
     
     # print(f"[BFS] No solution found after {iterations} iterations, visited {len(visited)} states")
     return None
