@@ -106,51 +106,51 @@
       "chapter": 1,
       "level": 1,
       "player": {
-        "row": 2,
-        "col": 7,
+        "row": 7,
+        "col": 9,
         "direction": "down"
       },
       "enemies": [
         {
           "type": "red_scorpion",
-          "row": 4,
+          "row": 2,
           "col": 8,
           "direction": "down"
         },
         {
           "type": "red_scorpion",
-          "row": 6,
+          "row": 2,
           "col": 6,
           "direction": "down"
         },
         {
           "type": "red_mummy",
-          "row": 9,
-          "col": 9,
-          "direction": "down"
-        },
-        {
-          "type": "white_mummy",
-          "row": 7,
-          "col": 8,
+          "row": 6,
+          "col": 1,
           "direction": "down"
         },
         {
           "type": "red_mummy",
-          "row": 0,
-          "col": 4,
+          "row": 5,
+          "col": 0,
+          "direction": "down"
+        },
+        {
+          "type": "red_mummy",
+          "row": 8,
+          "col": 0,
           "direction": "down"
         }
       ],
       "goal": {
         "row": 9,
-        "col": 0
+        "col": 3
       },
       "items": {
         "keys": [
           [
-            9,
-            0
+            7,
+            6
           ]
         ],
         "traps": [],
@@ -159,17 +159,22 @@
       "gates": {
         "positions": [
           [
-            2,
-            3
+            7,
+            2
           ],
           [
-            5,
-            7
+            4,
+            9
+          ],
+          [
+            3,
+            5
           ]
         ],
         "states": [
-          false,
-          false
+          true,
+          true,
+          true
         ]
       }
     },
@@ -179,95 +184,96 @@
         "cols": 10
       },
       "tiles": [
-        "....R.....",
         "..........",
-        ".......P..",
         "..........",
-        "........S.",
+        "......S.S.",
         "..........",
-        "......S...",
-        "........W.",
         "..........",
-        "K........R"
+        "R.........",
+        ".R........",
+        "......K..P",
+        "R.........",
+        "...E......"
       ],
       "walls_v": [
-        "|         |",
-        "| ||||||| |",
-        "|     |   |",
-        "|    ||   |",
-        "| ||||    |",
-        "|   |  |  |",
-        "|| |  | | |",
-        "| ||      |",
-        "||     ||||",
-        "||    ||  |"
+        "           ",
+        "   | | |   ",
+        " ||   |    ",
+        "     |     ",
+        "  |   ||   ",
+        "  ||| |    ",
+        " ||  |     ",
+        " ||| | |   ",
+        " |   |||   ",
+        "           "
       ],
       "walls_h": [
         "----------",
         "          ",
-        "  -=-  -  ",
-        "  -   - - ",
-        "--   - -  ",
-        " --  - = -",
-        "  - - - - ",
-        "-  - -   -",
-        " ---      ",
-        " - - -    ",
+        " -   --   ",
+        "   --~ -  ",
+        "    -   -~",
+        "    -  -  ",
+        "   -- --- ",
+        "  ~   -   ",
+        " -- -     ",
+        "      --  ",
         "----------"
       ],
       "exit": {
         "row": 9,
-        "col": 0
+        "col": 3
       }
     },
     "move_history": [
       {
         "player": [
-          2,
           7,
+          9,
           "down"
         ],
         "enemies": [
           [
-            4,
+            2,
             8,
             "down",
             "red_scorpion"
           ],
           [
-            6,
+            2,
             6,
             "down",
             "red_scorpion"
           ],
           [
-            9,
-            9,
+            6,
+            1,
             "down",
             "red_mummy"
           ],
           [
-            7,
-            8,
+            5,
+            0,
             "down",
-            "white_mummy"
+            "red_mummy"
           ],
           [
+            8,
             0,
-            4,
             "down",
             "red_mummy"
           ]
         ],
         "keys": [
           [
-            9,
-            0
+            7,
+            6
           ]
         ],
         "gates": {
-          "(2, 3)": false,
-          "(5, 7)": false
+          "(7, 2)": true,
+          "(4, 9)": true,
+          "(3, 5)": true
         }
       }
     ]

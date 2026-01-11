@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.25 (MiKTeX 24.1) (preloaded format=pdflatex 2026.1.11)  11 JAN 2026 16:28
+This is pdfTeX, Version 3.141592653-2.6-1.40.25 (MiKTeX 24.1) (preloaded format=pdflatex 2026.1.11)  11 JAN 2026 19:58
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -1362,64 +1362,51 @@ File: pgflibraryarrows.meta.code.tex 2023-01-15 v3.1.10 (3.1.10)
 \pgfarrowlength=\dimen354
 \pgfarrowwidth=\dimen355
 \pgfarrowlinewidth=\dimen356
-) (C:\Users\84918\AppData\Local\Programs\MiKTeX\tex/latex/tcolorbox\tcbskins.code.tex
-Library (tcolorbox): 'tcbskins.code.tex' version '6.2.0'
-(C:\Users\84918\AppData\Local\Programs\MiKTeX\tex/latex/tikzfill\tikzfill.image.sty
-Package: tikzfill.image 2023/08/08 v1.0.1 Image filling library for TikZ
- (C:\Users\84918\AppData\Local\Programs\MiKTeX\tex/latex/tikzfill\tikzfill-common.sty
-Package: tikzfill-common 2023/08/08 v1.0.1 Auxiliary code for tikzfill
-) (C:\Users\84918\AppData\Local\Programs\MiKTeX\tex/latex/tikzfill\tikzlibraryfill.image.code.tex
-File: tikzlibraryfill.image.code.tex 2023/08/08 v1.0.1 Image filling library
-\l__tikzfill_img_box=\box105
-)) (C:\Users\84918\AppData\Local\Programs\MiKTeX\tex/latex/tcolorbox\tcbskinsjigsaw.code.tex
-Library (tcolorbox): 'tcbskinsjigsaw.code.tex' version '6.2.0'
-)) (C:\Users\84918\AppData\Local\Programs\MiKTeX\tex/latex/tcolorbox\tcbbreakable.code.tex
-Library (tcolorbox): 'tcbbreakable.code.tex' version '6.2.0'
-(C:\Users\84918\AppData\Local\Programs\MiKTeX\tex/latex/pdfcol\pdfcol.sty
-Package: pdfcol 2022-09-21 v1.7 Handle new color stacks for pdfTeX (HO)
 )
-Package pdfcol Info: New color stack `tcb@breakable' = 1 on input line 23.
-\tcb@testbox=\box106
-\tcb@totalupperbox=\box107
-\tcb@totallowerbox=\box108
-) (C:\Users\84918\AppData\Local\Programs\MiKTeX\tex/generic/pgf/frontendlayer/tikz/libraries\tikzlibrarypositioning.code.tex
-File: tikzlibrarypositioning.code.tex 2023-01-15 v3.1.10 (3.1.10)
-) (C:\Users\84918\AppData\Local\Programs\MiKTeX\tex/generic/pgf/frontendlayer/tikz/libraries\tikzlibraryshapes.geometric.code.tex
-File: tikzlibraryshapes.geometric.code.tex 2023-01-15 v3.1.10 (3.1.10)
- (C:\Users\84918\AppData\Local\Programs\MiKTeX\tex/generic/pgf/libraries/shapes\pgflibraryshapes.geometric.code.tex
-File: pgflibraryshapes.geometric.code.tex 2023-01-15 v3.1.10 (3.1.10)
-))
-Package translations Info: No language package found. I am going to use `english' as default language. on input line 39.
+Package translations Info: No language package found. I am going to use `english' as default language. on input line 37.
 Package csquotes Info: Checking for multilingual support...
 Package csquotes Info: ... none found.
- (main.aux)
+ (main.aux
+
+LaTeX Warning: Label `fig:hinh_minh_hoa' multiply defined.
+
+
+LaTeX Warning: Label `fig:hinh_minh_hoa' multiply defined.
+
+
+LaTeX Warning: Label `fig:hinh_minh_hoa' multiply defined.
+
+
+LaTeX Warning: Label `fig:guest_mode' multiply defined.
+
+)
 \openout1 = `main.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 39.
-LaTeX Font Info:    ... okay on input line 39.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 39.
-LaTeX Font Info:    ... okay on input line 39.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 39.
-LaTeX Font Info:    ... okay on input line 39.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 39.
-LaTeX Font Info:    ... okay on input line 39.
-LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 39.
-LaTeX Font Info:    ... okay on input line 39.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 39.
-LaTeX Font Info:    ... okay on input line 39.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 39.
-LaTeX Font Info:    ... okay on input line 39.
-LaTeX Font Info:    Checking defaults for T5/cmr/m/n on input line 39.
-LaTeX Font Info:    ... okay on input line 39.
-LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 39.
-LaTeX Font Info:    ... okay on input line 39.
-LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 39.
-LaTeX Font Info:    ... okay on input line 39.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 37.
+LaTeX Font Info:    ... okay on input line 37.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 37.
+LaTeX Font Info:    ... okay on input line 37.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 37.
+LaTeX Font Info:    ... okay on input line 37.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 37.
+LaTeX Font Info:    ... okay on input line 37.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 37.
+LaTeX Font Info:    ... okay on input line 37.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 37.
+LaTeX Font Info:    ... okay on input line 37.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 37.
+LaTeX Font Info:    ... okay on input line 37.
+LaTeX Font Info:    Checking defaults for T5/cmr/m/n on input line 37.
+LaTeX Font Info:    ... okay on input line 37.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 37.
+LaTeX Font Info:    ... okay on input line 37.
+LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 37.
+LaTeX Font Info:    ... okay on input line 37.
  (C:\Users\84918\AppData\Local\Programs\MiKTeX\tex/context/base/mkii\supp-pdf.mkii
 [Loading MPS to PDF converter (version 2006.09.02).]
 \scratchcounter=\count544
 \scratchdimen=\dimen357
-\scratchbox=\box109
+\scratchbox=\box105
 \nofMPsegments=\count545
 \nofMParguments=\count546
 \everyMPshowfont=\toks77
@@ -1468,13 +1455,13 @@ File: epstopdf-sys.cfg 2021/03/18 v2.0 Configuration of epstopdf for MiKTeX
 * \@reversemarginfalse
 * (1in=72.27pt=25.4mm, 1cm=28.453pt)
 
-LaTeX Info: Redefining \microtypecontext on input line 39.
-Package microtype Info: Applying patch `item' on input line 39.
-Package microtype Info: Applying patch `toc' on input line 39.
-Package microtype Info: Applying patch `eqnum' on input line 39.
-Package microtype Info: Applying patch `footnote' on input line 39.
-Package microtype Info: Applying patch `verbatim' on input line 39.
-LaTeX Info: Redefining \microtypesetup on input line 39.
+LaTeX Info: Redefining \microtypecontext on input line 37.
+Package microtype Info: Applying patch `item' on input line 37.
+Package microtype Info: Applying patch `toc' on input line 37.
+Package microtype Info: Applying patch `eqnum' on input line 37.
+Package microtype Info: Applying patch `footnote' on input line 37.
+Package microtype Info: Applying patch `verbatim' on input line 37.
+LaTeX Info: Redefining \microtypesetup on input line 37.
 Package microtype Info: Generating PDF output.
 Package microtype Info: Character protrusion enabled (level 2).
 Package microtype Info: Using protrusion set `basictext'.
@@ -1490,7 +1477,7 @@ File: mt-cmr.cfg 2013/05/19 v2.2 microtype config. file: Computer Modern Roman (
 ) (C:\Users\84918\AppData\Local\Programs\MiKTeX\tex/latex/translations/dicts\translations-basic-dictionary-english.trsl
 File: translations-basic-dictionary-english.trsl (english translation file `translations-basic-dictionary')
 )
-Package translations Info: loading dictionary `translations-basic-dictionary' for `english'. on input line 39.
+Package translations Info: loading dictionary `translations-basic-dictionary' for `english'. on input line 37.
 Package caption Info: Begin \AtBeginDocument code.
 Package caption Info: hyperref package is loaded.
 Package caption Info: listings package is loaded.
@@ -1510,68 +1497,305 @@ Package biblatex Info: Automatic encoding selection.
 \openout5 = `main.bcf'.
 
 Package biblatex Info: Trying to load bibliographic data...
-Package biblatex Info: ... file 'main.bbl' not found.
-
-No file main.bbl.
-Package biblatex Info: Reference section=0 on input line 39.
-Package biblatex Info: Reference segment=0 on input line 39.
-Package hyperref Info: Link coloring ON on input line 39.
+Package biblatex Info: ... file 'main.bbl' found.
+ (main.bbl)
+Package biblatex Info: Reference section=0 on input line 37.
+Package biblatex Info: Reference segment=0 on input line 37.
+Package hyperref Info: Link coloring ON on input line 37.
+ (main.out) (main.out)
 \@outlinefile=\write6
 \openout6 = `main.out'.
 
-LaTeX Font Info:    Trying to load font information for U+msa on input line 41.
-(C:\Users\84918\AppData\Local\Programs\MiKTeX\tex/latex/amsfonts\umsa.fd
+LaTeX Font Info:    Trying to load font information for U+msa on input line 39.
+ (C:\Users\84918\AppData\Local\Programs\MiKTeX\tex/latex/amsfonts\umsa.fd
 File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 ) (C:\Users\84918\AppData\Local\Programs\MiKTeX\tex/latex/microtype\mt-msa.cfg
 File: mt-msa.cfg 2006/02/04 v1.1 microtype config. file: AMS symbols (a) (RS)
 )
-LaTeX Font Info:    Trying to load font information for U+msb on input line 41.
+LaTeX Font Info:    Trying to load font information for U+msb on input line 39.
  (C:\Users\84918\AppData\Local\Programs\MiKTeX\tex/latex/amsfonts\umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 ) (C:\Users\84918\AppData\Local\Programs\MiKTeX\tex/latex/microtype\mt-msb.cfg
 File: mt-msb.cfg 2005/06/01 v1.0 microtype config. file: AMS symbols (b) (RS)
 )
-LaTeX Font Info:    Trying to load font information for U+rsfs on input line 41.
+LaTeX Font Info:    Trying to load font information for U+rsfs on input line 39.
  (C:\Users\84918\AppData\Local\Programs\MiKTeX\tex/latex/jknappen\ursfs.fd
 File: ursfs.fd 1998/03/24 rsfs font definition file (jk)
 ) [1
 
-{C:/Users/84918/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map}]
-No file main.toc.
-\tf@toc=\write7
-\openout7 = `main.toc'.
-
-
+{C:/Users/84918/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map}] (main.toc
+LaTeX Font Info:    Trying to load font information for T5+cmtt on input line 8.
+ (C:\Users\84918\AppData\Local\Programs\MiKTeX\tex/latex/vntex\t5cmtt.fd
+File: t5cmtt.fd 1999/05/25 v2.5h Standard LaTeX font definitions
+)
 pdfTeX warning (ext4): destination with the same identifier (name{page.1}) has been already used, duplicate ignored
 <to be read again> 
                    \relax 
-l.44 \contents
-               [1
+l.25 ... vÃ  kiá»ƒm tra solvable}{17}{section.2.6}
+                                                  % [1
 
 
+
+] [2])
+\tf@toc=\write7
+\openout7 = `main.toc'.
+
+ [3] (1-Group_info.tex
+Ch\uhorn \ohorn ng 1.
+) (2-Game_architechture.tex [4
+
+
+{C:/Users/84918/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/cm-super/cm-super-ts1.enc}]
+Ch\uhorn \ohorn ng 2.
+[5
 
 ]
+LaTeX Font Info:    Font shape `T5/cmtt/bx/n' in size <12> not available
+(Font)              Font shape `T5/cmtt/m/n' tried instead on input line 35.
 
-! LaTeX Error: File `1-Introduction.tex' not found.
+Overfull \hbox (5.6176pt too wide) in paragraph at lines 47--48
+\T5/cmr/m/n/12 (-20) lev-el/chap-ter, keys/-trap-s/-gates_h, stored-move/init-pos, so-lu-tion, gate_anim_state, cí gameover,
+ []
 
-Type X to quit or <RETURN> to proceed,
-or enter new name. (Default extension: tex)
+[6]
+<images/turn_flowchart.png, id=294, 773.89125pt x 1130.2225pt>
+File: images/turn_flowchart.png Graphic file (type png)
+<use images/turn_flowchart.png>
+Package pdftex.def Info: images/turn_flowchart.png  used on input line 68.
+(pdftex.def)             Requested size: 389.00757pt x 568.12788pt.
+ [7] [8 <./images/turn_flowchart.png>] [9] [10]
+<images/undo_flowchart.png, id=320, 940.51375pt x 617.30624pt>
+File: images/undo_flowchart.png Graphic file (type png)
+<use images/undo_flowchart.png>
+Package pdftex.def Info: images/undo_flowchart.png  used on input line 141.
+(pdftex.def)             Requested size: 389.00757pt x 255.32016pt.
+ [11 <./images/undo_flowchart.png>]
+Overfull \hbox (33.33087pt too wide) in paragraph at lines 171--172
+[]\T5/cmr/m/n/12 (-20) Rebuild list en-emy tø \T5/cmtt/m/n/12 enemies_state \T5/cmr/m/n/12 (-20) (t¤o l¤i ob-ject \T5/cmtt/m/n/12 Enemy()\T5/cmr/m/n/12 (-20) , \T5/cmtt/m/n/12 set_type()\T5/cmr/m/n/12 (-20) , g¡n \T5/cmtt/m/n/12 uid\T5/cmr/m/n/12 (-20) , \T5/cmtt/m/n/12 pending_steps\T5/cmr/m/n/12 (-20) ,
+ []
 
-Enter file name: 
-d:/pygame/mummy_maze/Mummy_Maze_rp/main.tex:48: Emergency stop.
-<read *> 
-         
-l.48 \input{1-Introduction}
-                           ^^M
-*** (cannot \read from terminal in nonstop modes)
+[12]
+<images/generategame_flowchart.png, id=339, 557.08125pt x 584.1825pt>
+File: images/generategame_flowchart.png Graphic file (type png)
+<use images/generategame_flowchart.png>
+Package pdftex.def Info: images/generategame_flowchart.png  used on input line 205.
+(pdftex.def)             Requested size: 389.00757pt x 407.94443pt.
+ [13] [14 <./images/generategame_flowchart.png>]
+<images/prim_flowchart.png, id=356, 445.665pt x 836.12375pt>
+File: images/prim_flowchart.png Graphic file (type png)
+<use images/prim_flowchart.png>
+Package pdftex.def Info: images/prim_flowchart.png  used on input line 252.
+(pdftex.def)             Requested size: 389.00757pt x 729.8331pt.
+ [15]
+Overfull \vbox (122.37819pt too high) has occurred while \output is active []
 
- 
+ [16 <./images/prim_flowchart.png>]
+Overfull \hbox (27.84377pt too wide) in paragraph at lines 260--262
+[]\T5/cmr/m/n/12 (-20) Trong \T5/cmtt/m/n/12 module/module.py\T5/cmr/m/n/12 (-20) , solv-able ^^_÷ñc kiºm b¬ng \T5/cmtt/m/n/12 is_playable()\T5/cmr/m/n/12 (-20) , thüc ch§t gåi \T5/cmtt/m/n/12 path_finding()\T5/cmr/m/n/12 (-20) .
+ []
+
+[17]
+<images/bfs_flowchart.png, id=375, 605.26125pt x 828.09375pt>
+File: images/bfs_flowchart.png Graphic file (type png)
+<use images/bfs_flowchart.png>
+Package pdftex.def Info: images/bfs_flowchart.png  used on input line 317.
+(pdftex.def)             Requested size: 389.00757pt x 532.22736pt.
+ [18] [19 <./images/bfs_flowchart.png>] [20] [21]
+Overfull \hbox (1.85352pt too wide) in paragraph at lines 419--421
+[]\T5/cmr/m/n/12 (-20) Trong \T5/cmtt/m/n/12 module/module.py\T5/cmr/m/n/12 (-20) , \T5/cmtt/m/n/12 add_sprite_frames(sheet, CELL_SIZE, frames) \T5/cmr/m/n/12 (-20) c­t sheet theo
+ []
+
+[22]) (3-UI_Introduction.tex [23]
+Ch\uhorn \ohorn ng 3.
+[24
+
+]
+<images/explorer.png, id=424, 63.23625pt x 63.23625pt>
+File: images/explorer.png Graphic file (type png)
+<use images/explorer.png>
+Package pdftex.def Info: images/explorer.png  used on input line 35.
+(pdftex.def)             Requested size: 116.70345pt x 116.70634pt.
+<images/char_.png, id=425, 65.49469pt x 65.49469pt>
+File: images/char_.png Graphic file (type png)
+<use images/char_.png>
+Package pdftex.def Info: images/char_.png  used on input line 40.
+(pdftex.def)             Requested size: 116.70345pt x 116.70706pt.
+<images/w_mm.png, id=426, 67.75313pt x 63.23625pt>
+File: images/w_mm.png Graphic file (type png)
+<use images/w_mm.png>
+Package pdftex.def Info: images/w_mm.png  used on input line 51.
+(pdftex.def)             Requested size: 116.70345pt x 108.92728pt.
+<images/r_mm.png, id=427, 67.0003pt x 66.2475pt>
+File: images/r_mm.png Graphic file (type png)
+<use images/r_mm.png>
+Package pdftex.def Info: images/r_mm.png  used on input line 56.
+(pdftex.def)             Requested size: 116.70345pt x 115.39201pt.
+<images/scop.png, id=428, 65.49469pt x 66.2475pt>
+File: images/scop.png Graphic file (type png)
+<use images/scop.png>
+Package pdftex.def Info: images/scop.png  used on input line 61.
+(pdftex.def)             Requested size: 116.70345pt x 118.04854pt.
+<images/wall.png, id=429, 93.34875pt x 38.39343pt>
+File: images/wall.png Graphic file (type png)
+<use images/wall.png>
+Package pdftex.def Info: images/wall.png  used on input line 72.
+(pdftex.def)             Requested size: 70.0234pt x 28.80084pt.
+<images/gate.png, id=430, 80.55093pt x 42.1575pt>
+File: images/gate.png Graphic file (type png)
+<use images/gate.png>
+Package pdftex.def Info: images/gate.png  used on input line 77.
+(pdftex.def)             Requested size: 70.0234pt x 36.64905pt.
+<images/key.png, id=431, 47.42719pt x 51.94406pt>
+File: images/key.png Graphic file (type png)
+<use images/key.png>
+Package pdftex.def Info: images/key.png  used on input line 82.
+(pdftex.def)             Requested size: 70.0234pt x 76.70003pt.
+<images/trap.png, id=432, 66.2475pt x 63.98906pt>
+File: images/trap.png Graphic file (type png)
+<use images/trap.png>
+Package pdftex.def Info: images/trap.png  used on input line 87.
+(pdftex.def)             Requested size: 70.0234pt x 67.6406pt.
+ [25 <./images/explorer.png> <./images/char_.png> <./images/w_mm.png> <./images/r_mm.png> <./images/scop.png>]
+<images/ui_register.png, id=445, 794.97pt x 490.08093pt>
+File: images/ui_register.png Graphic file (type png)
+<use images/ui_register.png>
+Package pdftex.def Info: images/ui_register.png  used on input line 100.
+(pdftex.def)             Requested size: 194.50008pt x 119.90262pt.
+<images/ui_login.png, id=446, 959.08313pt x 603.0028pt>
+File: images/ui_login.png Graphic file (type png)
+<use images/ui_login.png>
+Package pdftex.def Info: images/ui_login.png  used on input line 109.
+(pdftex.def)             Requested size: 194.50008pt x 122.28221pt.
+ [26 <./images/wall.png> <./images/gate.png> <./images/key.png> <./images/trap.png> <./images/ui_register.png> <./images/ui_login.png>]
+<images/ui_guest.png, id=463, 957.5775pt x 599.99156pt>
+File: images/ui_guest.png Graphic file (type png)
+<use images/ui_guest.png>
+Package pdftex.def Info: images/ui_guest.png  used on input line 127.
+(pdftex.def)             Requested size: 194.50008pt x 121.86383pt.
+<images/ui_main_menu.png, id=464, 953.06062pt x 595.47469pt>
+File: images/ui_main_menu.png Graphic file (type png)
+<use images/ui_main_menu.png>
+Package pdftex.def Info: images/ui_main_menu.png  used on input line 138.
+(pdftex.def)             Requested size: 194.50008pt x 121.51883pt.
+<images/ui_game_mode.png, id=465, 948.54375pt x 591.71063pt>
+File: images/ui_game_mode.png Graphic file (type png)
+<use images/ui_game_mode.png>
+Package pdftex.def Info: images/ui_game_mode.png  used on input line 147.
+(pdftex.def)             Requested size: 194.50008pt x 121.32854pt.
+ [27 <./images/ui_guest.png> <./images/ui_main_menu.png>]
+<images/ui_tutorial.png, id=475, 954.56625pt x 596.2275pt>
+File: images/ui_tutorial.png Graphic file (type png)
+<use images/ui_tutorial.png>
+Package pdftex.def Info: images/ui_tutorial.png  used on input line 155.
+(pdftex.def)             Requested size: 194.50008pt x 121.48141pt.
+<images/ui_character_shop_1.png, id=476, 952.30782pt x 594.72188pt>
+File: images/ui_character_shop_1.png Graphic file (type png)
+<use images/ui_character_shop_1.png>
+Package pdftex.def Info: images/ui_character_shop_1.png  used on input line 164.
+(pdftex.def)             Requested size: 194.50008pt x 121.46503pt.
+<images/ui_character_shop_2.png, id=477, 953.81343pt x 598.48593pt>
+File: images/ui_character_shop_2.png Graphic file (type png)
+<use images/ui_character_shop_2.png>
+Package pdftex.def Info: images/ui_character_shop_2.png  used on input line 169.
+(pdftex.def)             Requested size: 194.50008pt x 122.04202pt.
+<images/ui_leaderboard.png, id=478, 952.30782pt x 590.205pt>
+File: images/ui_leaderboard.png Graphic file (type png)
+<use images/ui_leaderboard.png>
+Package pdftex.def Info: images/ui_leaderboard.png  used on input line 177.
+(pdftex.def)             Requested size: 194.50008pt x 120.54251pt.
+ [28 <./images/ui_game_mode.png> <./images/ui_tutorial.png> <./images/ui_character_shop_1.png> <./images/ui_character_shop_2.png>]
+<images/ui_classic_difficulties.png, id=490, 953.81343pt x 594.72188pt>
+File: images/ui_classic_difficulties.png Graphic file (type png)
+<use images/ui_classic_difficulties.png>
+Package pdftex.def Info: images/ui_classic_difficulties.png  used on input line 198.
+(pdftex.def)             Requested size: 194.50008pt x 121.27446pt.
+ [29 <./images/ui_leaderboard.png>]
+<images/ui_adventure_worldmap.png, id=497, 959.08313pt x 590.205pt>
+File: images/ui_adventure_worldmap.png Graphic file (type png)
+<use images/ui_adventure_worldmap.png>
+Package pdftex.def Info: images/ui_adventure_worldmap.png  used on input line 210.
+(pdftex.def)             Requested size: 194.50008pt x 119.68697pt.
+<images/ui_classic_play.png, id=498, 953.81343pt x 594.72188pt>
+File: images/ui_classic_play.png Graphic file (type png)
+<use images/ui_classic_play.png>
+Package pdftex.def Info: images/ui_classic_play.png  used on input line 226.
+(pdftex.def)             Requested size: 194.50008pt x 121.27446pt.
+ [30 <./images/ui_classic_difficulties.png> <./images/ui_adventure_worldmap.png>]
+<images/ui_adventure_play.png, id=509, 959.08313pt x 594.72188pt>
+File: images/ui_adventure_play.png Graphic file (type png)
+<use images/ui_adventure_play.png>
+Package pdftex.def Info: images/ui_adventure_play.png  used on input line 236.
+(pdftex.def)             Requested size: 194.50008pt x 120.60294pt.
+<images/ui_options.png, id=510, 959.83594pt x 599.23875pt>
+File: images/ui_options.png Graphic file (type png)
+<use images/ui_options.png>
+Package pdftex.def Info: images/ui_options.png  used on input line 252.
+(pdftex.def)             Requested size: 218.81444pt x 136.60591pt.
+<images/ui_exit.png, id=511, 953.06062pt x 595.47469pt>
+File: images/ui_exit.png Graphic file (type png)
+<use images/ui_exit.png>
+Package pdftex.def Info: images/ui_exit.png  used on input line 257.
+(pdftex.def)             Requested size: 218.81444pt x 136.71097pt.
+ [31 <./images/ui_classic_play.png> <./images/ui_adventure_play.png>]
+<images/death_white_mummy.png, id=522, 73.02281pt x 67.75313pt>
+File: images/death_white_mummy.png Graphic file (type png)
+<use images/death_white_mummy.png>
+Package pdftex.def Info: images/death_white_mummy.png  used on input line 271.
+(pdftex.def)             Requested size: 145.87875pt x 135.36424pt.
+<images/death_red_mummy.png, id=523, 69.25874pt x 65.49469pt>
+File: images/death_red_mummy.png Graphic file (type png)
+<use images/death_red_mummy.png>
+Package pdftex.def Info: images/death_red_mummy.png  used on input line 276.
+(pdftex.def)             Requested size: 145.87875pt x 137.96759pt.
+<images/death_scorpion.png, id=524, 64.74188pt x 63.23625pt>
+File: images/death_scorpion.png Graphic file (type png)
+<use images/death_scorpion.png>
+Package pdftex.def Info: images/death_scorpion.png  used on input line 281.
+(pdftex.def)             Requested size: 145.87875pt x 142.50215pt.
+<images/death_trap.png, id=525, 103.88812pt x 68.50594pt>
+File: images/death_trap.png Graphic file (type png)
+<use images/death_trap.png>
+Package pdftex.def Info: images/death_trap.png  used on input line 289.
+(pdftex.def)             Requested size: 136.14944pt x 89.79047pt.
+<images/ui_death.png, id=526, 955.31906pt x 599.99156pt>
+File: images/ui_death.png Graphic file (type png)
+<use images/ui_death.png>
+Package pdftex.def Info: images/ui_death.png  used on input line 302.
+(pdftex.def)             Requested size: 243.1288pt x 152.69827pt.
+ [32 <./images/ui_options.png> <./images/ui_exit.png> <./images/death_white_mummy.png> <./images/death_red_mummy.png> <./images/death_scorpion.png> <./images/death_trap.png>])
+
+LaTeX Warning: Empty bibliography on input line 50.
+
+[33 <./images/ui_death.png>]
+runsystem(latexminted cleantemp  --timestamp 20260111195841 FAD58DE7366495DB4650CFEFAC2FCD61)...disabled (restricted).
+
+ (main.aux)
+ ***********
+LaTeX2e <2023-11-01> patch level 1
+L3 programming layer <2024-01-04>
+ ***********
+
+
+LaTeX Warning: There were multiply-defined labels.
+
+Package rerunfilecheck Info: File `main.out' has not changed.
+(rerunfilecheck)             Checksum: 55A20415F5872C0262726C40BB94D5CA;12011.
+Package logreq Info: Writing requests to 'main.run.xml'.
+\openout1 = `main.run.xml'.
+
+ ) 
 Here is how much of TeX's memory you used:
- 59104 strings out of 474486
- 1379773 string characters out of 5743755
- 2421296 words of memory out of 5000000
- 80517 multiletter control sequences out of 15000+600000
- 576294 words of font info for 103 fonts, out of 8000000 for 9000
+ 57821 strings out of 474486
+ 1336542 string characters out of 5743755
+ 2332424 words of memory out of 5000000
+ 78996 multiletter control sequences out of 15000+600000
+ 584003 words of font info for 160 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 123i,5n,121p,1184b,1150s stack positions out of 10000i,1000n,20000p,200000b,200000s
-d:/pygame/mummy_maze/Mummy_Maze_rp/main.tex:48:  ==> Fatal error occurred, no output PDF file produced!
+ 123i,12n,121p,1184b,1446s stack positions out of 10000i,1000n,20000p,200000b,200000s
+<C:/Users/84918/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmmi12.pfb><C:/Users/84918/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmmi8.pfb><C:/Users/84918/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr12.pfb><C:/Users/84918/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmsy10.pfb><C:/Users/84918/AppData/Local/Programs/MiKTeX/fonts/type1/public/cm-super/sfrm1200.pfb><C:/Users/84918/AppData/Local/Programs/MiKTeX/fonts/type1/vntex/vnr/vnbx12.pfb><C:/Users/84918/AppData/Local/Programs/MiKTeX/fonts/type1/vntex/vnr/vnbxti10.pfb><C:/Users/84918/AppData/Local/Programs/MiKTeX/fonts/type1/vntex/vnr/vnr12.pfb><C:/Users/84918/AppData/Local/Programs/MiKTeX/fonts/type1/vntex/vnr/vnti12.pfb><C:/Users/84918/AppData/Local/Programs/MiKTeX/fonts/type1/vntex/vnr/vntt12.pfb>
+Output written on main.pdf (34 pages, 26883617 bytes).
+PDF statistics:
+ 622 PDF objects out of 1000 (max. 8388607)
+ 145 named destinations out of 1000 (max. 500000)
+ 39495 words of extra memory for PDF output out of 42996 (max. 10000000)
+

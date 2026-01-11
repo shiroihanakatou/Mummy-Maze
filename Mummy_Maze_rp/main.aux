@@ -5,3 +5,113 @@
 \providecommand\HyField@AuxAddToFields[1]{}
 \providecommand\HyField@AuxAddToCoFields[2]{}
 \@writefile{toc}{\contentsline {chapter}{MỤC LỤC}{1}{section*.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {chapter}{\numberline {1}THÔNG TIN NHÓM}{4}{chapter.1}\protected@file@percent }
+\@writefile{lof}{\addvspace {10\p@ }}
+\@writefile{lot}{\addvspace {10\p@ }}
+\@writefile{toc}{\contentsline {chapter}{\numberline {2}Thuật toán và cách triển khai trong game}{5}{chapter.2}\protected@file@percent }
+\@writefile{lof}{\addvspace {10\p@ }}
+\@writefile{lot}{\addvspace {10\p@ }}
+\newlabel{chap:chapter2}{{2}{5}{Thuật toán và cách triển khai trong game}{chapter.2}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {2.1}Giới thiệu chung}{5}{section.2.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {2.2}Tổ chức mã nguồn}{5}{section.2.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.2.1}Cấu trúc thư mục (theo file tree hiện tại)}{5}{subsection.2.2.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.2.2}Vai trò từng nhóm file (bám sát naming trong code)}{6}{subsection.2.2.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.2.3}Điều phối lượt chơi trong \texttt  {main.py}}{7}{subsection.2.2.3}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {2.1}{\ignorespaces Luồng điều phối lượt chơi trong \texttt  {main.py}}}{8}{figure.caption.3}\protected@file@percent }
+\providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
+\newlabel{fig:turn_flowchart}{{2.1}{8}{Luồng điều phối lượt chơi trong \texttt {main.py}}{figure.caption.3}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {2.3}Các class chính và cách tổ chức}{9}{section.2.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.3.1}\texttt  {Cell}: mô hình ô lưới và tường/cổng}{9}{subsection.2.3.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.3.2}\texttt  {Player}: input, animation, smooth slide}{9}{subsection.2.3.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.3.3}\texttt  {Enemy}: AI theo mode, đi 1 hoặc 2 bước, có \texttt  {uid}}{9}{subsection.2.3.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.3.4}\texttt  {Gamestate}: state chung, items, undo history, solution, gate animation}{10}{subsection.2.3.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {2.4}Undo và Restart}{11}{section.2.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.4.1}Tư tưởng triển khai}{11}{subsection.2.4.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {2.2}{\ignorespaces Quy trình Undo/Restart trong game}}{11}{figure.caption.4}\protected@file@percent }
+\newlabel{fig:hinh_minh_hoa}{{2.2}{11}{Quy trình Undo/Restart trong game}{figure.caption.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.4.2}\texttt  {make\_snapshot()}: snapshot gồm những gì}{11}{subsection.2.4.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.4.3}\texttt  {apply\_snapshot()}: restore state và reset các cờ movement}{12}{subsection.2.4.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.4.4}Undo trong runtime (liên hệ với \texttt  {main.py})}{12}{subsection.2.4.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.4.5}Restart}{13}{subsection.2.4.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {2.5}Sinh màn chơi (Generate game)}{13}{section.2.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.5.1}Pipeline tổng trong \texttt  {generate\_game()}}{13}{subsection.2.5.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {2.3}{\ignorespaces Quy trình sinh màn chơi trong game}}{14}{figure.caption.5}\protected@file@percent }
+\newlabel{fig:hinh_minh_hoa}{{2.3}{14}{Quy trình sinh màn chơi trong game}{figure.caption.5}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.5.2}Prim wall generate: \texttt  {generate\_walls\_pr()}}{15}{subsection.2.5.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Bước 1: tạo maze liên thông (Prim kiểu randomized)}{15}{paragraph*.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Bước 2: mở thêm cạnh để đạt mật độ tường mong muốn}{15}{paragraph*.7}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {2.4}{\ignorespaces Quy trình sinh tường bằng thuật toán Prim trong game}}{16}{figure.caption.8}\protected@file@percent }
+\newlabel{fig:hinh_minh_hoa}{{2.4}{16}{Quy trình sinh tường bằng thuật toán Prim trong game}{figure.caption.8}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {2.6}BFS path finding và kiểm tra solvable}{17}{section.2.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.6.1}BFS trong game không chỉ là BFS theo ô}{17}{subsection.2.6.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.6.2}State mà BFS đang xét (đúng theo code)}{17}{subsection.2.6.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.6.3}Transition trong BFS (mỗi bước tương ứng 1 lượt player)}{17}{subsection.2.6.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.6.4}Giả lập enemy turn ngay trong BFS}{18}{subsection.2.6.4}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {2.5}{\ignorespaces Quy trình BFS trong game}}{19}{figure.caption.9}\protected@file@percent }
+\newlabel{fig:hinh_minh_hoa}{{2.5}{19}{Quy trình BFS trong game}{figure.caption.9}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.6.5}Reconstruct solution}{20}{subsection.2.6.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {2.7}Hai thuật toán đường đi chính của quái}{20}{section.2.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.7.1}Manhattan greedy: \texttt  {new\_enemy\_position()}}{20}{subsection.2.7.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.7.2}BFS (impossible mode): \texttt  {impossible\_mode\_move()}}{20}{subsection.2.7.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.7.3}Kết nối với cơ chế 2 bước/turn}{20}{subsection.2.7.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {2.8}Tổ chức level JSON và save JSON}{21}{section.2.8}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.8.1}Level JSON (assets/map/*)}{21}{subsection.2.8.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.8.2}Save JSON (local profile, \texttt  {saveload.py})}{22}{subsection.2.8.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {2.9}Sprite sheet, animation, và hệ thống skin}{22}{section.2.9}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.9.1}Quy ước sprite hướng và frame}{22}{subsection.2.9.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.9.2}Cắt sprite sheet kiểu grid (legacy): \texttt  {add\_sprite\_frames()}}{23}{subsection.2.9.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.9.3}Chạy animation + slide}{23}{subsection.2.9.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {chapter}{\numberline {3}UI INTRODUCTION}{24}{chapter.3}\protected@file@percent }
+\@writefile{lof}{\addvspace {10\p@ }}
+\@writefile{lot}{\addvspace {10\p@ }}
+\@writefile{toc}{\contentsline {section}{\numberline {3.1}Sơ lược giao diện game}{24}{section.3.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1.1}Tổng quan trò chơi}{24}{subsection.3.1.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1.2}Công nghệ sử dụng}{24}{subsection.3.1.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {3.2}Các chức năng của game:}{25}{section.3.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2.1}Đồ họa và hoạt ảnh}{25}{subsection.3.2.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {3.1}{\ignorespaces Các loại quái vật trong mê cung.}}{25}{figure.caption.11}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {3.2}{\ignorespaces Các chướng ngại vật và vật phẩm.}}{26}{figure.caption.12}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2.2}Hệ thống Quản lý tài khoản:}{26}{subsection.3.2.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{Đăng ký tài khoản}{26}{subsubsection*.13}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {3.3}{\ignorespaces Màn hình Đăng ký tài khoản mới.}}{26}{figure.caption.14}\protected@file@percent }
+\newlabel{fig:register_screen}{{3.3}{26}{Màn hình Đăng ký tài khoản mới}{figure.caption.14}{}}
+\@writefile{toc}{\contentsline {subsubsection}{Đăng nhập}{26}{subsubsection*.15}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {3.4}{\ignorespaces Màn hình Đăng nhập.}}{26}{figure.caption.16}\protected@file@percent }
+\newlabel{fig:login_screen}{{3.4}{26}{Màn hình Đăng nhập}{figure.caption.16}{}}
+\@writefile{toc}{\contentsline {subsubsection}{Chức năng Chơi với tư cách khách (Play as Guest)}{27}{subsubsection*.17}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {3.5}{\ignorespaces Chế độ khách.}}{27}{figure.caption.18}\protected@file@percent }
+\newlabel{fig:guest_mode}{{3.5}{27}{Chế độ khách}{figure.caption.18}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2.3}Giao diện Menu chính}{27}{subsection.3.2.3}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {3.6}{\ignorespaces Giao diện Menu chính.}}{27}{figure.caption.19}\protected@file@percent }
+\newlabel{fig:main_menu}{{3.6}{27}{Giao diện Menu chính}{figure.caption.19}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3.7}{\ignorespaces Các chế độ game.}}{28}{figure.caption.20}\protected@file@percent }
+\newlabel{fig:game_mode}{{3.7}{28}{Các chế độ game}{figure.caption.20}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3.8}{\ignorespaces Hướng dẫn.}}{28}{figure.caption.21}\protected@file@percent }
+\newlabel{fig:tutorial}{{3.8}{28}{Hướng dẫn}{figure.caption.21}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3.9}{\ignorespaces Character shop}}{28}{figure.caption.22}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {3.10}{\ignorespaces Bảng xếp hạng.}}{29}{figure.caption.23}\protected@file@percent }
+\newlabel{fig:guest_mode}{{3.10}{29}{Bảng xếp hạng}{figure.caption.23}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2.4}Lựa chọn chế độ chơi}{29}{subsection.3.2.4}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {3.11}{\ignorespaces Các mức độ thử thách trong chế độ Classic.}}{30}{figure.caption.24}\protected@file@percent }
+\newlabel{fig:classic_levels}{{3.11}{30}{Các mức độ thử thách trong chế độ Classic}{figure.caption.24}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3.12}{\ignorespaces Giao diện Bản đồ thế giới trong chế độ Adventure.}}{30}{figure.caption.25}\protected@file@percent }
+\newlabel{fig:adventure_map}{{3.12}{30}{Giao diện Bản đồ thế giới trong chế độ Adventure}{figure.caption.25}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2.5}Giao diện Màn hình chơi}{30}{subsection.3.2.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{Giao diện Chế độ Classic}{30}{subsubsection*.26}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {3.13}{\ignorespaces Giao diện màn hình chơi chế độ Classic.}}{31}{figure.caption.27}\protected@file@percent }
+\newlabel{fig:play_classic}{{3.13}{31}{Giao diện màn hình chơi chế độ Classic}{figure.caption.27}{}}
+\@writefile{toc}{\contentsline {subsubsection}{Giao diện Chế độ Adventure}{31}{subsubsection*.28}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {3.14}{\ignorespaces Giao diện màn hình chơi chế độ Adventure.}}{31}{figure.caption.29}\protected@file@percent }
+\newlabel{fig:play_adventure}{{3.14}{31}{Giao diện màn hình chơi chế độ Adventure}{figure.caption.29}{}}
+\@writefile{toc}{\contentsline {subsubsection}{So sánh các nút chức năng chính}{31}{subsubsection*.30}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {3.15}{\ignorespaces OPTIONS}}{32}{figure.caption.31}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {3.16}{\ignorespaces EXIT}}{32}{figure.caption.31}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2.6}Giao diện khi thất bại}{32}{subsection.3.2.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{Các trạng thái khi nhân vật bị chết}{32}{subsubsection*.32}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {3.17}{\ignorespaces Minh họa các trạng thái kết thúc trò chơi.}}{32}{figure.caption.33}\protected@file@percent }
+\newlabel{fig:death_states}{{3.17}{32}{Minh họa các trạng thái kết thúc trò chơi}{figure.caption.33}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3.18}{\ignorespaces Giao diện thông báo khi người chơi chết.}}{33}{figure.caption.34}\protected@file@percent }
+\newlabel{fig:game_over}{{3.18}{33}{Giao diện thông báo khi người chơi chết}{figure.caption.34}{}}
+\xdef \mintedoldcachechecksum{\detokenize{\minted@cachechecksum }}
+\abx@aux@read@bbl@mdfivesum{5D0D039BF84E4F45A7144D280F172F5D}
+\gdef \@abspage@last{34}
