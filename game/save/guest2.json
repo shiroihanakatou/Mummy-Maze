@@ -1,0 +1,106 @@
+{
+  "player_info": {
+    "username": "guest2",
+    "password": null,
+    "is_guest": true,
+    "score": 4670,
+    "skin": "explorer",
+    "owned_skins": [
+      "explorer"
+    ]
+  },
+  "adventure": {
+    "game_state": {
+      "difficulty": "easy",
+      "impossible_mode": false,
+      "grid_size": 6,
+      "chapter": 1,
+      "level": 2,
+      "player": {
+        "row": 4,
+        "col": 0,
+        "direction": "left"
+      },
+      "enemies": [
+        {
+          "type": "white_mummy",
+          "row": 2,
+          "col": 0,
+          "direction": "down"
+        }
+      ],
+      "goal": {
+        "row": 0,
+        "col": 5
+      },
+      "items": {
+        "keys": [],
+        "traps": [],
+        "has_key": false
+      },
+      "gates": {
+        "positions": [],
+        "states": []
+      }
+    },
+    "map_data": {
+      "size": {
+        "rows": 6,
+        "cols": 6
+      },
+      "tiles": [
+        ".....E",
+        "......",
+        "W.....",
+        "......",
+        "P.....",
+        "......"
+      ],
+      "walls_v": [
+        " |     ",
+        "       ",
+        " |     ",
+        "       ",
+        "       ",
+        "       "
+      ],
+      "walls_h": [
+        "------",
+        "      ",
+        "      ",
+        "-    -",
+        "      ",
+        "      ",
+        "------"
+      ],
+      "exit": {
+        "row": 0,
+        "col": 5
+      }
+    },
+    "move_history": [
+      {
+        "player": [
+          4,
+          0,
+          "left"
+        ],
+        "enemies": [
+          [
+            2,
+            0,
+            "down",
+            "white_mummy"
+          ]
+        ],
+        "keys": [],
+        "gates": {}
+      }
+    ]
+  },
+  "classic": {
+    "game_state": null,
+    "map_data": null,
+    "move_history": []
+  }
+}

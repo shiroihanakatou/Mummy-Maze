@@ -3,7 +3,7 @@
     "username": "guest1",
     "password": null,
     "is_guest": true,
-    "score": 9382,
+    "score": 16182,
     "skin": "explorer",
     "owned_skins": [
       "explorer"
@@ -17,15 +17,15 @@
       "chapter": 1,
       "level": 1,
       "player": {
-        "row": 3,
-        "col": 3,
+        "row": 2,
+        "col": 5,
         "direction": "right"
       },
       "enemies": [
         {
           "type": "red_scorpion",
           "row": 5,
-          "col": 3,
+          "col": 5,
           "direction": "right"
         }
       ],
@@ -34,12 +34,7 @@
         "col": 5
       },
       "items": {
-        "keys": [
-          [
-            3,
-            3
-          ]
-        ],
+        "keys": [],
         "traps": [
           [
             1,
@@ -68,10 +63,10 @@
       "tiles": [
         "......",
         "....T.",
-        ".....E",
-        "...P..",
+        ".....P",
         "......",
-        "...S.."
+        "......",
+        ".....S"
       ],
       "walls_v": [
         "       ",
@@ -98,162 +93,57 @@
     "move_history": [
       {
         "player": [
-          1,
-          0,
+          3,
+          3,
           "down"
         ],
         "enemies": [
           [
             5,
-            1,
-            "down",
-            "white_mummy"
-          ],
-          [
-            5,
-            2,
-            "down",
-            "red_mummy"
-          ],
-          [
-            5,
             3,
             "down",
             "red_scorpion"
           ]
         ],
-        "keys": [
-          [
-            3,
-            3
-          ]
-        ],
+        "keys": [],
         "gates": {
-          "(3, 3)": false
+          "(3, 3)": true
         }
       },
       {
         "player": [
-          1,
-          1,
+          3,
+          4,
           "right"
         ],
         "enemies": [
           [
             5,
-            1,
-            "left",
-            "red_mummy"
-          ],
-          [
-            5,
-            2,
-            "left",
-            "red_scorpion"
-          ]
-        ],
-        "keys": [
-          [
-            3,
-            3
-          ]
-        ],
-        "gates": {
-          "(3, 3)": false
-        }
-      },
-      {
-        "player": [
-          2,
-          1,
-          "down"
-        ],
-        "enemies": [
-          [
-            5,
-            1,
-            "left",
-            "red_scorpion"
-          ]
-        ],
-        "keys": [
-          [
-            3,
-            3
-          ]
-        ],
-        "gates": {
-          "(3, 3)": false
-        }
-      },
-      {
-        "player": [
-          2,
-          2,
-          "right"
-        ],
-        "enemies": [
-          [
-            5,
-            2,
+            4,
             "right",
             "red_scorpion"
           ]
         ],
-        "keys": [
-          [
-            3,
-            3
-          ]
-        ],
+        "keys": [],
         "gates": {
-          "(3, 3)": false
+          "(3, 3)": true
         }
       },
       {
         "player": [
           3,
-          2,
-          "down"
-        ],
-        "enemies": [
-          [
-            5,
-            2,
-            "up",
-            "red_scorpion"
-          ]
-        ],
-        "keys": [
-          [
-            3,
-            3
-          ]
-        ],
-        "gates": {
-          "(3, 3)": false
-        }
-      },
-      {
-        "player": [
-          3,
-          3,
+          5,
           "right"
         ],
         "enemies": [
           [
             5,
-            3,
+            5,
             "right",
             "red_scorpion"
           ]
         ],
-        "keys": [
-          [
-            3,
-            3
-          ]
-        ],
+        "keys": [],
         "gates": {
           "(3, 3)": true
         }
@@ -262,157 +152,140 @@
   },
   "classic": {
     "game_state": {
-      "difficulty": "hard",
+      "difficulty": "medium",
       "impossible_mode": false,
-      "grid_size": 10,
+      "grid_size": 8,
       "chapter": 1,
       "level": 1,
       "player": {
-        "row": 3,
-        "col": 4,
-        "direction": "down"
+        "row": 4,
+        "col": 6,
+        "direction": "right"
       },
       "enemies": [
         {
           "type": "red_mummy",
-          "row": 9,
-          "col": 9,
-          "direction": "down"
+          "row": 2,
+          "col": 2,
+          "direction": "right"
         },
         {
           "type": "white_mummy",
-          "row": 8,
+          "row": 4,
           "col": 1,
-          "direction": "down"
-        },
-        {
-          "type": "red_mummy",
-          "row": 0,
-          "col": 6,
-          "direction": "down"
+          "direction": "right"
         }
       ],
       "goal": {
-        "row": 8,
-        "col": 0
+        "row": 7,
+        "col": 2
       },
       "items": {
-        "keys": [
-          [
-            1,
-            3
-          ]
-        ],
-        "traps": [],
-        "has_key": false
-      },
-      "gates": {
-        "positions": [
+        "keys": [],
+        "traps": [
           [
             7,
-            7
-          ],
-          [
-            6,
-            0
+            4
           ],
           [
             5,
-            1
+            7
           ]
         ],
-        "states": [
-          true,
-          true,
-          false
-        ]
+        "has_key": false
+      },
+      "gates": {
+        "positions": [],
+        "states": []
       }
     },
     "map_data": {
       "size": {
-        "rows": 10,
-        "cols": 10
+        "rows": 8,
+        "cols": 8
       },
       "tiles": [
-        "......R...",
-        "...K......",
-        "..........",
-        "....P.....",
-        "..........",
-        "..........",
-        "..........",
-        "..........",
-        "EW........",
-        ".........R"
+        "........",
+        "........",
+        "..R.....",
+        "........",
+        ".W....P.",
+        ".......T",
+        "........",
+        "..E.T..."
       ],
       "walls_v": [
-        "   |       ",
-        "      | |  ",
-        "  ||  |  | ",
-        "  |     |  ",
-        " || |      ",
-        "    | |    ",
-        " ||    |   ",
-        "  |  |   | ",
-        " |    | |  ",
-        "   ||      "
+        "   |     ",
+        "         ",
+        "   ||    ",
+        "   |     ",
+        "  |||    ",
+        "  ||     ",
+        "   |  |  ",
+        "     |   "
       ],
       "walls_h": [
-        "----------",
-        "   -----  ",
-        "       -  ",
-        " - - --   ",
-        "   - - -  ",
-        " = ----   ",
-        "~  - -  - ",
-        "      -~  ",
-        "  -  -    ",
-        "          ",
-        "----------"
+        "--------",
+        "-     - ",
+        "   --   ",
+        " -      ",
+        "  - --  ",
+        "     - -",
+        "    -   ",
+        "       -",
+        "--------"
       ],
       "exit": {
-        "row": 8,
-        "col": 0
+        "row": 7,
+        "col": 2
       }
     },
     "move_history": [
       {
         "player": [
-          3,
           4,
+          5,
           "down"
         ],
         "enemies": [
           [
-            9,
-            9,
+            1,
+            1,
             "down",
             "red_mummy"
           ],
           [
-            8,
+            4,
             1,
             "down",
             "white_mummy"
+          ]
+        ],
+        "keys": [],
+        "gates": {}
+      },
+      {
+        "player": [
+          4,
+          6,
+          "right"
+        ],
+        "enemies": [
+          [
+            2,
+            2,
+            "right",
+            "red_mummy"
           ],
           [
-            0,
-            6,
-            "down",
-            "red_mummy"
-          ]
-        ],
-        "keys": [
-          [
+            4,
             1,
-            3
+            "right",
+            "white_mummy"
           ]
         ],
-        "gates": {
-          "(7, 7)": true,
-          "(6, 0)": true,
-          "(5, 1)": false
-        }
+        "keys": [],
+        "gates": {}
       }
     ]
   }
