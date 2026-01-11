@@ -12,7 +12,7 @@ class Cell:
         self.down = 0
         self.left = 0
         self.right = 0
-        self.sprite_sheet = pygame.image.load("game/assets/images/walls6.png").convert_alpha()
+        self.sprite_sheet = pygame.image.load("assets/images/walls6.png").convert_alpha()
 
     def _scale(self, frame):
         factor = CELL_SIZE / 60
@@ -58,7 +58,7 @@ class Player:
         self.skin = skin  # Current skin ID
         self.type = "explorer"  # Keep for backward compatibility
 
-        self.sprite_sheet = pygame.image.load(f"game/assets/images/{self.type}6.png").convert_alpha()
+        self.sprite_sheet = pygame.image.load(f"assets/images/{self.type}6.png").convert_alpha()
         sheet_rect = self.sprite_sheet.get_rect()
         self.frame_w = sheet_rect.width // 5
         self.frame_h = sheet_rect.height // 4
@@ -257,7 +257,7 @@ class Enemy:
         self.direction = "down"
         self.type = random.choice(["red_mummy", "white_mummy", "red_scorpion"])
 
-        self.sprite_sheet = pygame.image.load(f"game/assets/images/{self.type}6.png").convert_alpha()
+        self.sprite_sheet = pygame.image.load(f"assets/images/{self.type}6.png").convert_alpha()
         sheet_rect = self.sprite_sheet.get_rect()
         self.frame_w = sheet_rect.width // 5
         self.frame_h = sheet_rect.height // 4

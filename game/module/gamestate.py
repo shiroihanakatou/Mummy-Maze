@@ -67,9 +67,9 @@ class Gamestate:
         self.sfx = {}
 
         try:
-            self.sprite_sheet = pygame.image.load(f"game/assets/images/stairs{ROWS}.png").convert_alpha()
+            self.sprite_sheet = pygame.image.load(f"assets/images/stairs{ROWS}.png").convert_alpha()
         except Exception:
-            self.sprite_sheet = pygame.image.load("game/assets/images/stairs6.png").convert_alpha()
+            self.sprite_sheet = pygame.image.load("assets/images/stairs6.png").convert_alpha()
 
         self._build_stairs_frames()
         self._load_special_sprites()
@@ -79,8 +79,8 @@ class Gamestate:
         try:
             # Key: 36 frames horizontal with mask
             self.key_frames = load_frames_with_mask(
-                "game/assets/images/key.gif",
-                "game/assets/images/_key.gif",
+                "assets/images/key.gif",
+                "assets/images/_key.gif",
                 36
             )
             self.key_anim_idx = 0
@@ -92,7 +92,7 @@ class Gamestate:
 
         try:
             # Gate: 8 frames horizontal (no mask available)
-            gate_sheet = pygame.image.load("game/assets/images/gate6.gif").convert_alpha()
+            gate_sheet = pygame.image.load("assets/images/gate6.gif").convert_alpha()
             self.gate_frames = slice_sheet(gate_sheet, 8)
             self.gate_anim_state = {}  # {(r, c): {"frame": idx, "time": t, "is_closing": bool}}
             # print("[Gamestate] Gate sprite loaded (8 frames)")
@@ -103,8 +103,8 @@ class Gamestate:
         try:
             # Trap: 1 frame (static) with mask
             self.trap_frames = load_frames_with_mask(
-                "game/assets/images/trap6.gif",
-                "game/assets/images/_trap6.gif",
+                "assets/images/trap6.gif",
+                "assets/images/_trap6.gif",
                 1
             )
             # print("[Gamestate] Trap sprite loaded with mask (1 frame)")
@@ -115,8 +115,8 @@ class Gamestate:
         # Phase 4: death assets
         try:
             self.expfall_frames = load_frames_with_mask(
-                "game/assets/images/expfall6.gif",
-                "game/assets/images/_expfall6.gif",
+                "assets/images/expfall6.gif",
+                "assets/images/_expfall6.gif",
                 4,
             )
             # print("[Gamestate] Expfall sprite loaded (4 frames)")
@@ -127,8 +127,8 @@ class Gamestate:
         try:
             # Dark hole overlay for trap death
             self.floor_dark_frames = load_frames_with_mask(
-                "game/assets/images/floordark6.jpg",
-                "game/assets/images/_floordark6.gif",
+                "assets/images/floordark6.jpg",
+                "assets/images/_floordark6.gif",
                 1,
             )
             # print("[Gamestate] Floor dark loaded")
@@ -138,8 +138,8 @@ class Gamestate:
 
         try:
             self.dust_frames = load_frames_with_mask(
-                "game/assets/images/dust6.gif",
-                "game/assets/images/_dust6.gif",
+                "assets/images/dust6.gif",
+                "assets/images/_dust6.gif",
                 32,
             )
             # print("[Gamestate] Dust sprite loaded (32 frames)")
@@ -150,7 +150,7 @@ class Gamestate:
         # Block trap + player freakout (new death type)
         try:
             # Block sheet has no separate alpha mask; slice directly
-            block_sheet = pygame.image.load("game/assets/images/block6.gif").convert_alpha()
+            block_sheet = pygame.image.load("assets/images/block6.gif").convert_alpha()
             self.block_frames = slice_sheet(block_sheet, 16)
             # print("[Gamestate] Block sprite loaded (10 frames)")
         except Exception as e:
@@ -159,8 +159,8 @@ class Gamestate:
 
         try:
             self.freakout_frames = load_frames_with_mask(
-                "game/assets/images/freakout6.gif",
-                "game/assets/images/_freakout6.gif",
+                "assets/images/freakout6.gif",
+                "assets/images/_freakout6.gif",
                 16,
             )
             # print("[Gamestate] Freakout sprite loaded (16 frames)")
@@ -170,18 +170,18 @@ class Gamestate:
 
         try:
             self.red_fight_frames = load_frames_with_mask(
-                "game/assets/images/redfight6.gif",
-                "game/assets/images/_redfight6.gif",
+                "assets/images/redfight6.gif",
+                "assets/images/_redfight6.gif",
                 1,
             )
             self.white_fight_frames = load_frames_with_mask(
-                "game/assets/images/whitefight6.gif",
-                "game/assets/images/_whitefight6.gif",
+                "assets/images/whitefight6.gif",
+                "assets/images/_whitefight6.gif",
                 1,
             )
             self.stung_frames = load_frames_with_mask(
-                "game/assets/images/stung6.gif",
-                "game/assets/images/_stung6.gif",
+                "assets/images/stung6.gif",
+                "assets/images/_stung6.gif",
                 20,
             )
             # print("[Gamestate] Fight sprites loaded")

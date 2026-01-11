@@ -71,7 +71,9 @@ def run_game():
     global menu_y
     pygame.init()
     screen_main = ScreenManager(SCREEN_WIDTH, SCREEN_HEIGHT)
-
+    icon_surf = pygame.image.load("assets/images/icon.ico")
+    pygame.display.set_icon(icon_surf)
+    pygame.display.set_caption("Mummy Maze-FMM 25TNT1")
     GAME_DIR = Path(__file__).resolve().parent
     ASSETS_DIR = GAME_DIR / "assets"
 
@@ -279,16 +281,16 @@ def run_game():
         "move_delay": 0.5,  # seconds between moves
     }
 
-    img_options = pygame.image.load("game/assets/images/OPTIONS_BUTTON.png").convert_alpha()
+    img_options = pygame.image.load("assets/images/OPTIONS_BUTTON.png").convert_alpha()
     img_options = pygame.transform.smoothscale(img_options, (245, 72))
     options_button = Button(img_options, 110, 216)
 
-    img_done = pygame.image.load("game/assets/images/DONE_BUTTON.png").convert_alpha()
+    img_done = pygame.image.load("assets/images/DONE_BUTTON.png").convert_alpha()
     img_done = pygame.transform.smoothscale(img_done, (180, 54))
     done_button = TextButton("DONE", (650, 500), menu_font, min_size=(270, 90))
-    options_panel_bg = pygame.image.load("game/assets/images/OPTIONS_BG.png").convert_alpha()
+    options_panel_bg = pygame.image.load("assets/images/OPTIONS_BG.png").convert_alpha()
     options_panel_bg = pygame.transform.smoothscale(options_panel_bg, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
-    ankh_img = pygame.image.load("game/assets/images/sliderankh.png").convert_alpha()
+    ankh_img = pygame.image.load("assets/images/sliderankh.png").convert_alpha()
 
     s_music = OptionsSlider("Music", 540, 320, 300, 0.5)
     s_sound = OptionsSlider("Sound Fx", 540, 370, 300, 0.7)
@@ -869,7 +871,7 @@ def run_game():
                     # Save the killed enemy's state for undo to restore
                     enemy_state = (other.row, other.col, getattr(other, "direction", "down"), getattr(other, "type", None))
                     killed_this_turn.append(enemy_state)
-                    print(f"[COLLISION] Enemy {other.uid} ({other.type}) killed! killed_this_turn now has {len(killed_this_turn)} entries: {killed_this_turn}")
+                    #print(f"[COLLISION] Enemy {other.uid} ({other.type}) killed! killed_this_turn now has {len(killed_this_turn)} entries: {killed_this_turn}")
                     # Play a collision sound when an enemy kills another (avoid block.wav)
                     hit_snd = gamestate.sfx.get("mummyhowl")
                     if hit_snd:
@@ -1831,10 +1833,10 @@ def run_game():
                     en = enemies[current_turn]
                     # Skip dead enemies during turn processing
                     if en.uid in killed_uids:
-                        print(f"[TURN] Skipping dead enemy {current_turn} (uid={en.uid})")
+                        #print(f"[TURN] Skipping dead enemy {current_turn} (uid={en.uid})")
                         current_turn += 1
                     else:
-                        print(f"[TURN] Enemy {current_turn} ({en.type}) moving...")
+                        #print(f"[TURN] Enemy {current_turn} ({en.type}) moving...")
                         en.move(player, grid, gamestate)
                         # Check collision after this enemy moves
                         if gamestate.state != "DEATH_ANIM":
@@ -1844,7 +1846,7 @@ def run_game():
                 else:
                     # All enemies done, wait for all animations to finish then back to player
                     if _actors_idle():
-                        print(f"[TURN] All enemies done, back to player")
+                        #print(f"[TURN] All enemies done, back to player")
                         current_turn = "player"
 
             # Append snapshot when turn fully settled - only when it's player's turn again
@@ -1857,8 +1859,8 @@ def run_game():
                 # DEBUG: Print snapshot info
                 enemies_in_snap = snapshot[3] if len(snapshot) > 3 else []
                 killed_in_snap = snapshot[6] if len(snapshot) > 6 else []
-                print(f"[SNAPSHOT] Added snapshot #{len(gamestate.storedmove)}: player=({snapshot[0]},{snapshot[1]}), enemies={len(enemies_in_snap)}, killed_this_turn={len(killed_in_snap)}")
-                print(f"  killed_uids={killed_uids}, killed_this_turn={killed_this_turn}")
+                #print(f"[SNAPSHOT] Added snapshot #{len(gamestate.storedmove)}: player=({snapshot[0]},{snapshot[1]}), enemies={len(enemies_in_snap)}, killed_this_turn={len(killed_in_snap)}")
+               # print(f"  killed_uids={killed_uids}, killed_this_turn={killed_this_turn}")
 
                 # Remove dead enemies from list AFTER taking snapshot (only when turn is complete)
                 if killed_uids:

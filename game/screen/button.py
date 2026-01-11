@@ -60,7 +60,7 @@ def reset_gamestate_anim_flags(gamestate):
 
 class Newgamebutton:
     def __init__(self):
-        self.image = pygame.image.load("game/assets/images/NEW_GAME_BUTTON.png").convert()
+        self.image = pygame.image.load("assets/images/NEW_GAME_BUTTON.png").convert()
         self.image = pygame.transform.smoothscale(self.image, (245, 72))
         self.rect = self.image.get_rect(topleft=(110, 486))
 
@@ -122,7 +122,7 @@ class Newgamebutton:
 
 class Restartbutton:
     def __init__(self):
-        self.image = pygame.image.load("game/assets/images/RESTART_BUTTON.png").convert()
+        self.image = pygame.image.load("assets/images/RESTART_BUTTON.png").convert()
         self.image = pygame.transform.smoothscale(self.image, (245, 72))
         self.rect = self.image.get_rect(topleft=(110, 306))
 
@@ -166,7 +166,7 @@ class Restartbutton:
 
 class Undobutton:
     def __init__(self):
-        self.image = pygame.image.load("game/assets/images/UNDO_BUTTON.png").convert()
+        self.image = pygame.image.load("assets/images/UNDO_BUTTON.png").convert()
         self.image = pygame.transform.smoothscale(self.image, (245, 72))
         self.rect = self.image.get_rect(topleft=(110, 396))
 
@@ -229,7 +229,7 @@ class Undobutton:
 
 class Exitbutton:
     def __init__(self):
-        self.image = pygame.image.load("game/assets/images/EXIT_BUTTON.png").convert()
+        self.image = pygame.image.load("assets/images/EXIT_BUTTON.png").convert()
         self.image = pygame.transform.smoothscale(self.image, (245, 72))
         self.rect = self.image.get_rect(topleft=(110, 667))
 
@@ -251,7 +251,7 @@ class Exitbutton:
 
 class StartButton:
     def __init__(self):
-        self.image = pygame.image.load("game/assets/images/start_button_4.png").convert_alpha()
+        self.image = pygame.image.load("assets/images/start_button_4.png").convert_alpha()
         self.height = 127
         self.width = 307
         self.image = pygame.transform.smoothscale(self.image, (self.width, self.height))

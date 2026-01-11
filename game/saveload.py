@@ -4,11 +4,18 @@ import os
 import uuid
 from pathlib import Path
 from typing import Optional, Dict, Any
-import urllib.request
-import urllib.error
+import requests
+import time
 from variable import debug_log
 
 FIREBASE_URL = "https://mummy-maze-43e73-default-rtdb.asia-southeast1.firebasedatabase.app"
+
+# Reuse a single HTTP session (faster TLS + keep-alive)
+_HTTP = requests.Session()
+_HTTP.headers.update({
+    "Content-Type": "application/json",
+    "Accept": "application/json"
+})
 
 def get_save_dir():
     """Ensure save directory exists"""
@@ -72,7 +79,7 @@ def serialize_game_state(player, enemies, gamestate, grid, mode: str):
     
     # For classic mode, save map data in level JSON format
     map_data = None
-    if mode in ("classic", "adventure"):
+    if mode == "classic":
         try:
             # Build tiles string (same format as level JSON)
             tiles = []
@@ -205,12 +212,12 @@ def serialize_classic(player, enemies, gamestate, grid):
     return state, map_data, move_history
 
 def serialize_adventure(player, enemies, gamestate, grid):
-    """Serialize adventure mode: returns (state, map_data, move_history)."""
+    """Serialize adventure mode: returns (state, move_history) without map_data."""
     mode = "adventure"
-    state, map_data, move_history = serialize_game_state(player, enemies, gamestate, grid, mode)
+    state, _map_data_unused, move_history = serialize_game_state(player, enemies, gamestate, grid, mode)
     # Debug log summary
     debug_log(f"[SAVE][ADVENTURE] grid_size={state.get('grid_size')} chapter={state.get('chapter')} level={state.get('level')} moves={len(move_history)}")
-    return state, map_data, move_history
+    return state, move_history
 
 def create_save_data(username: str, password: Optional[str], is_guest: bool, score: int,
                      adventure_state=None, classic_state=None, skin: str = "explorer", 
@@ -227,7 +234,7 @@ def create_save_data(username: str, password: Optional[str], is_guest: bool, sco
             "skin": skin,
             "owned_skins": owned_skins
         },
-        "adventure": adventure_state or {"game_state": None, "map_data": None, "move_history": []},
+        "adventure": adventure_state or {"game_state": None, "move_history": []},
         "classic": classic_state or {"game_state": None, "map_data": None, "move_history": []}
     }
 
@@ -267,59 +274,86 @@ def list_local_saves(limit: int = 5):
     return profiles
 
 def save_firebase(username: str, save_data: Dict[str, Any]) -> bool:
-    """Save to Firebase RTDB"""
+    """Save to Firebase RTDB (requests)."""
     try:
         url = f"{FIREBASE_URL}/saves/{username}.json"
-        data = json.dumps(save_data).encode('utf-8')
-        req = urllib.request.Request(url, data=data, method='PUT')
-        req.add_header('Content-Type', 'application/json')
-        
-        with urllib.request.urlopen(req, timeout=5) as response:
-            return response.status == 200
+
+        r = _HTTP.put(url, json=save_data, timeout=(2, 5))
+        ok = (200 <= r.status_code < 300)
+
+        # Keep leaderboard as a separate lightweight node (Firebase only).
+        # This avoids downloading massive save blobs when rendering leaderboard.
+        try:
+            if ok:
+                player_info = (save_data or {}).get("player_info", {}) if isinstance(save_data, dict) else {}
+                is_guest = bool(player_info.get("is_guest", False))
+                score = int(player_info.get("score", 0) or 0)
+                if (not is_guest) and score > 0:
+                    update_leaderboard(username, score)
+        except Exception as ex:
+            debug_log(f"[SaveLoad] Leaderboard update skipped: {ex}")
+
+        return ok
     except Exception as e:
         debug_log(f"[SaveLoad] Firebase save failed: {e}")
         return False
 
 def load_firebase(username: str) -> Optional[Dict[str, Any]]:
-    """Load from Firebase RTDB"""
+    """Load from Firebase RTDB (requests)."""
     try:
         url = f"{FIREBASE_URL}/saves/{username}.json"
-        with urllib.request.urlopen(url, timeout=5) as response:
-            data = json.loads(response.read().decode('utf-8'))
-            return data if data else None
+        r = _HTTP.get(url, timeout=(2, 5))
+        if not (200 <= r.status_code < 300):
+            return None
+        data = r.json()
+        return data if data else None
     except Exception as e:
         debug_log(f"[SaveLoad] Firebase load failed: {e}")
         return None
 
-def get_leaderboard(limit: int = 10) -> list:
-    """Get top scores from Firebase leaderboard"""
+def update_leaderboard(username: str, score: int) -> bool:
+    """Update Firebase leaderboard entry for a user (Firebase only, requests)."""
     try:
-        url = f"{FIREBASE_URL}/saves.json"
-        with urllib.request.urlopen(url, timeout=5) as response:
-            all_saves = json.loads(response.read().decode('utf-8'))
-            
-            if not all_saves:
-                return []
-            
-            # Extract scores with usernames
-            scores = []
-            for username, save_data in all_saves.items():
-                if save_data and isinstance(save_data, dict):
-                    player_info = save_data.get("player_info", {})
-                    score = player_info.get("score", 0)
-                    is_guest = player_info.get("is_guest", False)
-                    
-                    # Skip guests or invalid scores
-                    if not is_guest and score > 0:
-                        scores.append({
-                            "username": username,
-                            "score": score
-                        })
-            
-            # Sort by score descending
-            scores.sort(key=lambda x: x["score"], reverse=True)
-            return scores[:limit]
-            
+        url = f"{FIREBASE_URL}/leaderboard/{username}.json"
+        payload = {"score": int(score), "ts": int(time.time())}
+
+        r = _HTTP.put(url, json=payload, timeout=(2, 3))
+        return (200 <= r.status_code < 300)
+    except Exception as e:
+        debug_log(f"[SaveLoad] Leaderboard update failed: {e}")
+        return False
+
+def get_leaderboard(limit: int = 10) -> list:
+    """Get top scores from Firebase leaderboard (Firebase only, requests).
+
+    Reads from /leaderboard, not /saves (fast).
+    """
+    try:
+        limit = int(limit) if limit else 10
+        if limit <= 0:
+            return []
+
+        # Query only the highest `limit` scores.
+        # Firebase returns ascending; we reverse after parsing.
+        url = f"{FIREBASE_URL}/leaderboard.json"
+        params = {"orderBy": '"score"', "limitToLast": str(limit)}
+        r = _HTTP.get(url, params=params, timeout=(2, 5))
+        if not (200 <= r.status_code < 300):
+            return []
+        data = r.json()
+        print(data,url)
+        if not data or not isinstance(data, dict):
+            return []
+
+        scores = []
+        for username, entry in data.items():
+            if entry and isinstance(entry, dict):
+                score = int(entry.get("score", 0) or 0)
+                if score > 0:
+                    scores.append({"username": username, "score": score})
+
+        scores.sort(key=lambda x: x["score"], reverse=True)
+        return scores[:limit]
     except Exception as e:
         debug_log(f"[SaveLoad] Leaderboard fetch failed: {e}")
         return []

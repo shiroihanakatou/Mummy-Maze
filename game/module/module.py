@@ -175,7 +175,7 @@ class ScreenManager:
         pygame.display.update()
 
 def add_sprite_frames(entity):
-    entity.sprite_sheet = pygame.image.load(f"game/assets/images/{entity.type}6.png").convert_alpha()
+    entity.sprite_sheet = pygame.image.load(f"assets/images/{entity.type}6.png").convert_alpha()
     sheet_rect = entity.sprite_sheet.get_rect()
 
     entity.frame_w = sheet_rect.width // 5
@@ -487,7 +487,7 @@ class ProgressManager:
 
 def load_current_level(progress_mgr, grid, player, enemies, gamestate):
     filename = progress_mgr.get_level_filename()
-    filepath = f"game/assets/map/{filename}"
+    filepath = f"assets/map/{filename}"
     try:
         rows, cols, tiles, walls_v, walls_h, exit_pos = read_map_json(filepath)
     except Exception:

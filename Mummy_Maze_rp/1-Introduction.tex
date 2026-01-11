@@ -1,0 +1,51 @@
+\chapter{Introduction}
+
+\section{Current background}
+\begin{enumerate}
+    \item The explosion of text data
+    
+    In recent years, the amount of digital documents and complex text has grown exponentially \cite{info13020083, info10040150}. IDC forecasts that global data volume will increase from 33 Zettabytes (in 2018) to 175 Zettabytes by 2025. This data source is extremely diverse, including emails, blogs, administrative documents, and personal communications, leading to information overload \cite{zaveri2011automatic}. The current rate of text information generation has far exceeded the manual processing capabilities of humans, making the development of automatic classification systems urgent \cite{info13020083,zaveri2011automatic}.
+    \item The unstructured nature of data
+    
+    The input data for language processing tasks is raw and unstructured text \cite{info13020083}. Unlike other data types, text does not have an intrinsic arithmetic representation that computers can process immediately \cite{info13020083}. Most texts are written freely, lacking standardized formatting (except for some scientific articles), requiring reliance on keyword occurrences or semantic features for classification \cite{zaveri2011automatic}. Notably, nearly 80\% of business information exists in this form of unstructured text data \cite{info10040150}.
+    \item Current challenges
+    
+    Modern text processing and classification face numerous significant challenges.
+    \begin{itemize}
+        \item \textbf{Data representation:} It is necessary to convert unstructured text into a structured feature space \cite{info10040150}. However, this is difficult because the data contains a lot of "noise" (stops, spelling errors, slang) and a huge vocabulary (millions of words), causing problems with time and memory complexity \cite{info10040150}.
+        \item \textbf{Resource and technical requirements:} Traditional methods (“shallow learning”) rely heavily on costly manual feature extraction and require expert knowledge \cite{info13020083}. In contrast, deep learning models, while powerful, require large amounts of data and high computational resources \cite{info10040150}.
+        \item \textbf{Transparency and reliability:} Deep learning models often suffer from the "black box" problem, meaning a lack of ability to explain how decisions are made \cite{info10040150}. Additionally, there are concerns that large language models act like "stochastic parrots"—memorizing training data without actually understanding the language—and are vulnerable to counterattacks \cite{info13020083}.
+    \end{itemize}
+\end{enumerate}
+
+\section{Position of the text classification problem}
+\begin{enumerate}
+    \item In the context of Machine Learning
+    
+    Text classification is a typical \textbf{semi-supervised or supervised learning problem} in which documents are assigned to predefined labels based on content \cite{zaveri2011automatic}. This field has undergone a dramatic paradigm shift: from "shallow learning" methods that rely on costly manual feature design to \textbf{deep learning} methods with the ability to automatically extract complex and nonlinear semantic features \cite{info13020083,info10040150}.
+    \item The intersection between fields
+    
+    This problem is at the heart of the development of \textbf{Text Mining} and \textbf{Natural Language Processing (NLP)} \cite{info13020083}. It demonstrates a clear technological intersection when applying architectures from computer vision (such as CNNs to capture discriminant phrases) \cite{info13020083,zaveri2011automatic} and graph theory (Graph Neural Networks) \cite{info13020083} to traditional probabilistic statistical models \cite{info10040150}.
+    \item The foundational role in information systems
+    
+    Text classification is a core tool for addressing the problem of digital information overload \cite{zaveri2011automatic}. Its role spans many important applications
+    \begin{itemize}
+        \item \textbf{Information Retrieval and Filtering:} The foundation for search engines, spam filtering systems, and automated document organization \cite{info13020083,info10040150}.
+        \item \textbf{Advanced Data Analysis:} Supports sentiment analysis, user opinion discovery, and recommender systems \cite{info10040150,zaveri2011automatic}.
+        \item \textbf{Knowledge Management:} Automates text summarization and management of unstructured data sources (accounting for up to 80\% of business information) in fields such as healthcare, law, and business \cite{info10040150}.
+    \end{itemize}
+\end{enumerate}
+
+\section{Scientific significance}
+\begin{enumerate}
+    \item Promoting research on Natural Language Processing (NLP)
+    
+    Text classification is a fundamental task and a major challenge, playing a key role in the development of the field of Text Mining and NLP \cite{info13020083,info10040150}. The success of algorithms in this field is based on the ability to model complex and non-linear relationships, requiring a deep understanding of modern machine learning methods \cite{info10040150}.
+    \item Solving the data representation problem
+    
+    This is the core problem in transforming unstructured text data into a structured feature space that computers can process \cite{info13020083,info10040150}. Efforts to solve this problem have driven the shift from manual feature extraction methods (such as BoW, TF-IDF) to deep learning techniques capable of automatically learning complex semantic and syntactic features through word embedding and contextual representation models \cite{info13020083,info10040150}.
+    \item Foundation for more complex problems
+    
+    Text classification techniques serve as a foundation for many advanced information processing applications such as Information Retrieval, Sentiment Analysis, Recommender Systems, and Text Summarization \cite{info13020083,info10040150}. In addition, it provides a methodological basis for solving in-depth problems in fields such as healthcare (medical record coding), law, and social sciences \cite{info10040150}.
+\end{enumerate}
+    

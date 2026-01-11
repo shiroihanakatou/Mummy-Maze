@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 
 # Path to characters folder
-CHARACTERS_DIR = Path("game/assets/characters")
+CHARACTERS_DIR = Path("assets/characters")
 
 
 # Available character skins (skin_id -> {name, cost})
@@ -202,7 +202,7 @@ def get_skin_preview(skin_id: str, target_size: int = 120):
     try:
         if skin_id == "explorer":
             # Default explorer - use first frame from spritesheet
-            sheet = pygame.image.load("game/assets/images/explorer6.png").convert_alpha()
+            sheet = pygame.image.load("assets/images/explorer6.png").convert_alpha()
             frame_w = sheet.get_width() // 5
             frame_h = sheet.get_height() // 4
             # Get the "down" direction first frame (row 2, col 0)
