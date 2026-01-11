@@ -176,7 +176,7 @@ def run_game():
 
     # default classic: size hiện tại (variable default) + generate
     gamestate.enemy_count = 3 if ROWS >= 10 else (2 if ROWS >= 8 else 1)
-    generate_game(grid, player, enemies, gamestate)
+   # generate_game(grid, player, enemies, gamestate)
 
     start_bg = pygame.image.load(str(ASSETS_DIR / "images" / "bg_start_1.jpg")).convert_alpha()
     start_bg = pygame.transform.smoothscale(start_bg, (SCREEN_WIDTH + 10, SCREEN_HEIGHT + 60))

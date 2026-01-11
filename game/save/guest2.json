@@ -19,7 +19,7 @@
       "player": {
         "row": 4,
         "col": 0,
-        "direction": "left"
+        "direction": "down"
       },
       "enemies": [
         {
@@ -83,7 +83,7 @@
         "player": [
           4,
           0,
-          "left"
+          "down"
         ],
         "enemies": [
           [
@@ -99,8 +99,177 @@
     ]
   },
   "classic": {
-    "game_state": null,
-    "map_data": null,
-    "move_history": []
+    "game_state": {
+      "difficulty": "impossible",
+      "impossible_mode": true,
+      "grid_size": 10,
+      "chapter": 1,
+      "level": 1,
+      "player": {
+        "row": 2,
+        "col": 7,
+        "direction": "down"
+      },
+      "enemies": [
+        {
+          "type": "red_scorpion",
+          "row": 4,
+          "col": 8,
+          "direction": "down"
+        },
+        {
+          "type": "red_scorpion",
+          "row": 6,
+          "col": 6,
+          "direction": "down"
+        },
+        {
+          "type": "red_mummy",
+          "row": 9,
+          "col": 9,
+          "direction": "down"
+        },
+        {
+          "type": "white_mummy",
+          "row": 7,
+          "col": 8,
+          "direction": "down"
+        },
+        {
+          "type": "red_mummy",
+          "row": 0,
+          "col": 4,
+          "direction": "down"
+        }
+      ],
+      "goal": {
+        "row": 9,
+        "col": 0
+      },
+      "items": {
+        "keys": [
+          [
+            9,
+            0
+          ]
+        ],
+        "traps": [],
+        "has_key": false
+      },
+      "gates": {
+        "positions": [
+          [
+            2,
+            3
+          ],
+          [
+            5,
+            7
+          ]
+        ],
+        "states": [
+          false,
+          false
+        ]
+      }
+    },
+    "map_data": {
+      "size": {
+        "rows": 10,
+        "cols": 10
+      },
+      "tiles": [
+        "....R.....",
+        "..........",
+        ".......P..",
+        "..........",
+        "........S.",
+        "..........",
+        "......S...",
+        "........W.",
+        "..........",
+        "K........R"
+      ],
+      "walls_v": [
+        "|         |",
+        "| ||||||| |",
+        "|     |   |",
+        "|    ||   |",
+        "| ||||    |",
+        "|   |  |  |",
+        "|| |  | | |",
+        "| ||      |",
+        "||     ||||",
+        "||    ||  |"
+      ],
+      "walls_h": [
+        "----------",
+        "          ",
+        "  -=-  -  ",
+        "  -   - - ",
+        "--   - -  ",
+        " --  - = -",
+        "  - - - - ",
+        "-  - -   -",
+        " ---      ",
+        " - - -    ",
+        "----------"
+      ],
+      "exit": {
+        "row": 9,
+        "col": 0
+      }
+    },
+    "move_history": [
+      {
+        "player": [
+          2,
+          7,
+          "down"
+        ],
+        "enemies": [
+          [
+            4,
+            8,
+            "down",
+            "red_scorpion"
+          ],
+          [
+            6,
+            6,
+            "down",
+            "red_scorpion"
+          ],
+          [
+            9,
+            9,
+            "down",
+            "red_mummy"
+          ],
+          [
+            7,
+            8,
+            "down",
+            "white_mummy"
+          ],
+          [
+            0,
+            4,
+            "down",
+            "red_mummy"
+          ]
+        ],
+        "keys": [
+          [
+            9,
+            0
+          ]
+        ],
+        "gates": {
+          "(2, 3)": false,
+          "(5, 7)": false
+        }
+      }
+    ]
   }
 }

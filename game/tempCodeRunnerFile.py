@@ -1,1 +1,1 @@
-get_leaderboard
+gen

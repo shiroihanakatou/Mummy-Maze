@@ -1029,6 +1029,7 @@ def is_not_too_easy(player, enemy, grid, gamestate):
                 return False
     return True
 
+
 def generate_game(grid, player, enemies, gamestate):
     # print("Generating new game...")
 
@@ -1099,29 +1100,27 @@ def generate_game(grid, player, enemies, gamestate):
                 e.type = random.choice(["red_mummy", "white_mummy", "red_scorpion"])
                 add_sprite_frames(e)
 
-        generate_walls(grid, random.randint(ROWS * COLS // 4, ROWS * COLS))
+        generate_walls_pr(grid, random.randint(ROWS * COLS // 4, 2*ROWS * COLS))
         
         # Randomly place keys, gates, and traps
         generate_random_items(grid, player, enemies, gamestate, taken)
 
-        # Solvability + difficulty checks
+        #check if some cells are unreachable
+        # if not is_not_too_easy(player, enemies[0], grid, gamestate):
+        #     print("[Generate] Rejecting map: too easy")
+        #     continue
+        # # Solvability + difficulty checks
         if not is_playable(player, enemies, grid, gamestate):
-            continue
-
-        # Require key usage in 80% of key maps
-        require_key_use = bool(gamestate.keys) and (random.random() < 0.8)
-        if require_key_use and (not solution_touches_key(gamestate.solution, player, grid, gamestate)):
-            # print("[Generate] Rejecting map: solution skips key")
+            #print("[Generate] Rejecting map: no solution")
             continue
 
         # Enforce minimum solution length
         min_len = max(6, ROWS)
         if len(gamestate.solution) < min_len:
-            # print(f"[Generate] Rejecting map: solution too short ({len(gamestate.solution)} < {min_len})")
+            #print(f"[Generate] Rejecting map: solution too short ({len(gamestate.solution)} < {min_len})")
             continue
-
-        if is_not_too_easy(player, enemies[0], grid, gamestate):
-            break
+        #print(f"[Generate] Accepted map: solution length {len(gamestate.solution)}")
+        break
 
     gamestate.initpos = make_snapshot(player, enemies, gamestate)
     gamestate.storedmove.clear()
@@ -1132,6 +1131,91 @@ def generate_game(grid, player, enemies, gamestate):
 
     # print("New game generated.")
     # print(gamestate.solution)
+def _set_wall_between(grid, r, c, nr, nc, val):
+    # val: 0=open, 1=wall
+    if nr == r - 1 and nc == c:  # up
+        grid[nr][nc].down = val
+        grid[r][c].up = val
+        return
+    if nr == r + 1 and nc == c:  # down
+        grid[r][c].down = val
+        grid[nr][nc].up = val
+        return
+    if nr == r and nc == c - 1:  # left
+        grid[r][c].left = val
+        grid[nr][nc].right = val
+        return
+    if nr == r and nc == c + 1:  # right
+        grid[r][c].right = val
+        grid[nr][nc].left = val
+        return
+
+
+def generate_walls_pr(grid, num_walls):
+    R, C = ROWS, COLS
+    N = R * C
+    E = R * (C - 1) + C * (R - 1)
+    max_walls_connected = E - (N - 1)  # = (R-1)(C-1)
+
+    # Clamp để luôn solvable, khỏi spam reject
+    target_walls = max(0, min(int(num_walls), max_walls_connected))
+
+    # 1) Close all (tường kín)
+    for r in range(R):
+        for c in range(C):
+            cell = grid[r][c]
+            cell.up = 1
+            cell.down = 1
+            cell.left = 1
+            cell.right = 1
+
+    def neighbors(r, c):
+        if r > 0: yield (r - 1, c)
+        if r < R - 1: yield (r + 1, c)
+        if c > 0: yield (r, c - 1)
+        if c < C - 1: yield (r, c + 1)
+
+    # 2) Prim: mở N-1 cạnh để connected chắc chắn
+    sr = random.randint(0, R - 1)
+    sc = random.randint(0, C - 1)
+
+    in_maze = {(sr, sc)}
+    frontier = []
+
+    def add_frontier(r, c):
+        for nr, nc in neighbors(r, c):
+            if (nr, nc) not in in_maze:
+                frontier.append((r, c, nr, nc))
+
+    add_frontier(sr, sc)
+
+    while frontier:
+        i = random.randrange(len(frontier))
+        r, c, nr, nc = frontier.pop(i)
+        if (nr, nc) in in_maze:
+            continue
+        _set_wall_between(grid, r, c, nr, nc, 0)
+        in_maze.add((nr, nc))
+        add_frontier(nr, nc)
+
+    # 3) Mở thêm để đạt đúng target_walls
+    extra_opens = max_walls_connected - target_walls
+    if extra_opens <= 0:
+        return
+
+    closed_edges = []
+    for r in range(R):
+        for c in range(C):
+            if r < R - 1 and grid[r][c].down == 1:
+                closed_edges.append((r, c, r + 1, c))
+            if c < C - 1 and grid[r][c].right == 1:
+                closed_edges.append((r, c, r, c + 1))
+
+    if closed_edges:
+        random.shuffle(closed_edges)
+        for k in range(min(extra_opens, len(closed_edges))):
+            r, c, nr, nc = closed_edges[k]
+            _set_wall_between(grid, r, c, nr, nc, 0)
 
 def generate_walls(grid, num_walls):
     directions = [('up', 'down', -1, 0), ('down', 'up', 1, 0),
